@@ -1,42 +1,81 @@
-# Predictive Risk, Capacity, and Revenue with OML
+# Predictive Risk, Capacity, and Revenue with Oracle Machine Learning (OML)
 
 ## Introduction
 
-This lab scores persisted **Oracle Machine Learning** models created by the finance stack. Make the business bridge clearer: predictions become useful when risk, capacity, revenue, and customer signals can be scored where governed finance data already lives.
+Finance teams use dashboards to understand what has already happened, but they also need predictions that help them plan what to do next. Those predictions are more useful when analysts can see which model produced the score, which business record was scored, and how the result connects back to product, revenue, or risk decisions.
 
-Prediction adds forward-looking evidence to the operating flow. Instead of only describing current risk and service pressure, the database can score demand surge, customer segments, product clusters, and revenue expectations where the governed data already lives.
+In this lab, you will take on the persona of a database developer supporting both an ML engineer and a finance decision-maker. The ML engineer needs to show that deployed **Oracle Machine Learning (OML)** models can be scored consistently inside Oracle Database. The finance decision-maker needs results that are easy to review, explain, and use for planning.
 
-This lab shifts the story from current evidence to forward-looking evidence. The same database records used for dashboard, service, and transaction review become model features scored in place.
+You will inventory persisted OML models, score demand-surge and revenue-prediction models in SQL, and review the results next to finance data that business users recognize. By the end of the lab, you will see how in-database machine learning keeps the model, the score, and the supporting finance evidence together.
 
-![Finance OML scoring flow](images/finance-oml-scoring-flow.svg " ")
+<details>
+<summary><strong>Key terms: OML model, feature, classification, regression, clustering, and confidence</strong></summary>
+
+> - A **model** is a trained pattern that can score new or current data. In this lab, OML models estimate demand surge, revenue impact, or product grouping from finance records in Oracle Database.
+>
+> - A **feature** is an input value used by a model. Features can come from product activity, risk severity, transaction attributes, customer behavior, case-processing capacity, or revenue history. Good features translate raw finance records into signals the model can learn from.
+>
+> - **Classification** predicts a category or label, such as `SURGE` or `STABLE`. This helps teams choose between states, such as whether a product may need more review capacity.
+>
+> - **Regression** predicts a number, such as expected revenue, forecasted load, or estimated impact. This is useful when planners need a measurable value rather than a yes/no label.
+>
+> - **Clustering** groups similar records together without requiring a preassigned label. In finance, clustering can compare products, identify cohorts, or find groups that behave alike.
+>
+> - **Confidence** is the estimated strength of a prediction. It helps you compare stronger and weaker predictions. It is not a guaranteed outcome. Treat confidence as decision support that still needs business review.
+
+</details>
+
+The first image below explains the Oracle Machine Learning (OML) scoring flow. Product, transaction, risk, client, revenue, and capacity data become model features. Oracle Machine Learning scores the models inside the database. The results return to SQL as labels, clusters, forecasts, probabilities, and operational risk signals.
+
+![Finance Oracle Machine Learning scoring flow](images/finance-oml-scoring-flow.svg " ")
+
+The second image is the Predictive Risk, Capacity and Revenue page. It gives finance teams a business view of product risk, client segments, forecast quality, product cohorts, and case pressure. In this lab, capacity means the ability of teams or service centers to handle review, support, onboarding, dispute, fraud, or AML work. The SQL shows how Oracle Database inventories and scores these predictive results.
 
 ![Predictive Risk Capacity and Revenue page](images/predictive-risk-oml.png " ")
 
 ### Objectives
 
 - Inventory the four OML models.
-- Score classification, clustering, and regression models.
+- Score classification and regression models.
+- Review a simple model quality check.
 
 Estimated Time: **12 minutes**
 
-### Operating Story
+### Business Scenario
 
 | Step | Finance focus |
 | --- | --- |
 | Business Problem | Finance teams need prediction without exporting sensitive operating data. |
 | Technical Challenge | Data science and application teams need deployed models that can be scored from SQL without copying governed finance records elsewhere. |
-| Persona Focus | Risk and revenue leaders use predictions; database developers and ML engineers prove the models score inside the database. |
-| What You Will Prove | Persisted OML models can be inventoried and scored directly in SQL. |
-| Database Capability | DBMS\_DATA\_MINING, PREDICTION, PREDICTION\_PROBABILITY, CLUSTER\_ID, and CLUSTER\_PROBABILITY support in-database ML. |
+| Persona Focus | You connect deployed ML models to the finance decision-maker review process. |
+| What You Will See | Persisted OML models can be inventoried and scored directly in SQL. |
+| Database Capability | The Oracle Machine Learning model catalog, `PREDICTION`, and `PREDICTION_PROBABILITY` support in-database ML scoring. |
 | Outcome | Risk, segmentation, revenue, and product grouping outputs are explainable from SQL. |
-
-Persona focus: You bridge the ML engineer and finance decision-maker by showing how deployed models produce reviewable scores where the data already lives.
 
 ## Task 1: Inventory persisted OML models
 
-Perform the following set of steps to inventory persisted OML models before trusting predictive output:
+Begin by reviewing the persisted OML models available for scoring.
 
 1. Run this model inventory query:
+
+    > **SQL Worksheet reminder:** Need a reminder on how to open and use the SQL Worksheet? Return to [Getting Started Task 2: Open SQL Worksheet](?lab=getting-started#Task2:OpenSQLWorksheet) for the step-by-step graphic showing where to paste and run SQL statements.
+
+    You are confirming which predictive models are available before using them in finance decisions.
+
+    In order to understand this query, you need to read it in three parts.
+
+    1. `USER_MINING_MODELS` is the database catalog view for OML models owned by your schema.
+    2. `MODEL_NAME` tells you which deployed model is available to score.
+    3. `MINING_FUNCTION` and `ALGORITHM` tell you what kind of prediction the model makes and how it was trained.
+
+    <details>
+    <summary><strong>Why this matters: in-database machine learning</strong></summary>
+
+    > In a fractured environment, data teams often export sensitive finance records to a separate machine learning platform, score the data there, and then send results back to the application or dashboard. That creates copies, governance questions, and extra movement of sensitive data.
+    >
+    > Oracle Machine Learning lets you score models inside Oracle Database. The model, data, SQL evidence, and business context stay close together, which is better for explainability and governance.
+
+    </details>
 
     ```sql
     <copy>
@@ -44,6 +83,12 @@ Perform the following set of steps to inventory persisted OML models before trus
            mining_function,
            algorithm
     FROM user_mining_models
+    WHERE model_name IN (
+      'CUSTOMER_SEGMENT_MODEL',
+      'DEMAND_SURGE_MODEL',
+      'PRODUCT_CLUSTER_MODEL',
+      'REVENUE_PREDICT_MODEL'
+    )
     ORDER BY model_name;
     </copy>
     ```
@@ -59,19 +104,26 @@ Perform the following set of steps to inventory persisted OML models before trus
 
 
 2. Confirm the model list.
-    The query reads the model catalog, so it proves deployed model readiness before any prediction is trusted. That mirrors the foundation lab, but for the predictive layer.
+    The query reads the model catalog so you can see which predictive functions are available for finance decisions.
 
-    Expected models are CUSTOMER\_SEGMENT\_MODEL, DEMAND\_SURGE\_MODEL, PRODUCT\_CLUSTER\_MODEL, and REVENUE\_PREDICT\_MODEL. The list proves that the database contains deployed models for several finance decisions, not just one isolated prediction.
+    Expected models are CUSTOMER\_SEGMENT\_MODEL, DEMAND\_SURGE\_MODEL, PRODUCT\_CLUSTER\_MODEL, and REVENUE\_PREDICT\_MODEL. The list shows that the database contains deployed models for several finance decisions, not just one isolated prediction. In this lab, you score the demand and revenue models.
 
-    This inventory is important because a prediction is only operationally useful when teams can verify which model exists, what mining function it performs, and whether it can be scored from SQL.
-
-**Note:** Sample values may change after data refreshes or rebuilds. Focus on the expected result pattern and the business takeaway, not the exact values.
+    This matters because a prediction is easier to trust when teams know which model produced it. The inventory gives the learner a simple checkpoint before scoring: what model exists, what it predicts, and whether it can be called from SQL.
 
 ## Task 2: Score demand risk and revenue in SQL
 
-The prediction labels are the most important part of this task. The confidence and predicted revenue values are model scores, so your workshop environment may show small decimal differences from the examples. Focus on whether the results tell the same business story: which products are predicted as `SURGE` or `STABLE`, which predictions are stronger or weaker, and whether predicted revenue is directionally close to the target revenue.
+Now score demand risk and revenue directly in SQL so learners can see how deployed OML models support finance decisions without moving governed data out of the database.
 
-1. Run the demand surge classification query.
+1. Run the demand surge classification query:
+
+    You are scoring product demand pressure and showing the product names behind the model output.
+
+    In order to understand this query, you need to read it in four parts.
+
+    1. `OML_DEMAND_TRAINING_V` gives the model a repeatable set of product and risk inputs.
+    2. `PREDICTION(DEMAND_SURGE_MODEL USING *)` asks the deployed model to classify each row as `SURGE` or `STABLE`.
+    3. `PREDICTION_PROBABILITY(DEMAND_SURGE_MODEL USING *)` returns confidence for that prediction. The `ROUND` function makes the score easier to read.
+    4. The outer query joins to `PRODUCTS` so the learner sees a product name, not just a product id.
 
     ```sql
     <copy>
@@ -108,10 +160,59 @@ The prediction labels are the most important part of this task. The confidence a
     | 9 | Treasury Sweep Account | STABLE | STABLE | 0.6597 |
     | 10 | Corporate Card Program | STABLE | STABLE | 0.5252 |
 
-    The inline query scores the same model inputs as the training view, then joins to `PRODUCTS` to show the learner-facing financial product name. The `ORDER BY product_id` clause makes the displayed sample rows stable. The `Confidence` values are OML model scores, not stored source data.
+    Review the predicted surge and confidence together. A `SURGE` prediction can help an analyst decide which products may need more monitoring, outreach, or case-processing capacity. Confidence helps the analyst decide how strongly the model supports that prediction. It does not replace review; it helps rank where to look first.
 
 
-2. Run revenue regression.
+2. Check how often the demand model matches the known label.
+
+    A model score is the result returned when a trained model evaluates a row of data. For a classification model, the score is the predicted label, such as `SURGE` or `STABLE`. The confidence value is the model probability for that prediction. It is not certainty, and it is not a guarantee that the outcome will happen.
+
+    Before analysts use a model score, they need a quick check that the model is behaving reasonably on the workshop data. This query compares two values for each product: the known label in the training view and the label predicted by the model.
+
+    ```sql
+    <copy>
+    SELECT actual_label,
+           predicted_label,
+           COUNT(*) AS product_count
+    FROM (
+      SELECT surge_label AS actual_label,
+             PREDICTION(DEMAND_SURGE_MODEL USING *) AS predicted_label
+      FROM oml_demand_training_v
+    )
+    GROUP BY actual_label,
+             predicted_label
+    ORDER BY actual_label,
+             predicted_label;
+    </copy>
+    ```
+
+    **Expected output: Demand Model Agreement Check**
+
+    | Actual Label | Predicted Label | Product Count |
+    | --- | --- | --- |
+    | STABLE | STABLE | 59 |
+    | SURGE | STABLE | 4 |
+    | SURGE | SURGE | 16 |
+
+    In order to understand this query, you need to read it in three parts.
+
+    1. `SURGE_LABEL` comes from `OML_DEMAND_TRAINING_V`. It marks each product as `SURGE` or `STABLE` in the demo data, so the query renames it `ACTUAL_LABEL`.
+    2. `PREDICTION(DEMAND_SURGE_MODEL USING *)` asks the model to predict a label for the same row. In this query, it is renamed `PREDICTED_LABEL`.
+    3. The outer query groups the results so you can count how often each actual and predicted combination appears.
+
+    Rows where `ACTUAL_LABEL` and `PREDICTED_LABEL` are the same are matches. Rows where they are different show where the model prediction differs from the label stored in `OML_DEMAND_TRAINING_V`. This is a simple learning check, not a full production model evaluation.
+
+    The workshop uses synthetic demo data to teach the SQL pattern. Do not interpret these scores as a production financial risk model.
+
+3. Run revenue regression.
+
+    You are estimating revenue outcomes from the persisted regression model.
+
+    In order to understand this query, you need to read it in three parts.
+
+    1. `OML_REVENUE_TRAINING_V` gives the model a consistent set of revenue-related inputs.
+    2. `PREDICTION(REVENUE_PREDICT_MODEL USING *)` returns a numeric revenue estimate for each row.
+    3. The query shows `TARGET_REVENUE` next to `PREDICTED_REVENUE` so the learner can compare the known business value with the model estimate.
 
     ```sql
     <copy>
@@ -119,6 +220,7 @@ The prediction labels are the most important part of this task. The confidence a
            target_revenue,
            ROUND(PREDICTION(REVENUE_PREDICT_MODEL USING *), 2) AS predicted_revenue
     FROM oml_revenue_training_v
+    ORDER BY order_id
     FETCH FIRST 10 ROWS ONLY;
     </copy>
     ```
@@ -127,26 +229,26 @@ The prediction labels are the most important part of this task. The confidence a
 
     | Order Id | Target Revenue | Predicted Revenue |
     | --- | --- | --- |
-    | 534 | 10035 | 8122.69 |
-    | 578 | 5280 | 7385.46 |
-    | 579 | 1050 | 802.92 |
-    | 6 | 5830 | 5460.79 |
-    | 14 | 5400 | 6105.85 |
-    | 27 | 2900 | 3772.87 |
-    | 50 | 2815 | 4198.3 |
-    | 124 | 10390 | 8707.78 |
-    | 158 | 2900 | 4522.79 |
-    | 173 | 5390 | 7872.1 |
+    | 1 | 2400 | 2225.21 |
+    | 2 | 11685 | 7647.67 |
+    | 3 | 8470 | 8394.92 |
+    | 4 | 7540 | 6976.93 |
+    | 5 | 4965 | 4240.34 |
+    | 6 | 5830 | 5459.59 |
+    | 8 | 2360 | 1901.23 |
+    | 9 | 6300 | 7593.86 |
+    | 10 | 1787.5 | 2654.61 |
+    | 11 | 5450 | 7138.97 |
 
 
-3. Compare actual target revenue to predicted revenue.
-    The demand query classifies product pressure from stored finance features, and the revenue query estimates a transaction outcome from customer, order, and fulfillment attributes.
+4. Compare actual target revenue to predicted revenue.
+    Look for rows where predicted revenue is close to target revenue, then look for rows where the difference is larger. Close values show where the model estimate lines up with known outcomes. Larger gaps show where an analyst may want more context, such as unusual customer behavior, product mix, or fulfillment timing.
 
-    The demand query returns predicted surge labels with confidence, which helps product and operations teams decide where to watch capacity or risk pressure. The revenue query compares known target revenue to predicted revenue, which helps reviewers understand whether the model is directionally useful for planning.
+    The demand query helps teams decide which products may need attention. The revenue query helps teams see whether a model estimate is useful for planning. Both queries score persisted models without moving sensitive finance records out of Oracle Database.
 
-    Both queries score persisted models without leaving Oracle Database. That keeps sensitive finance records close to the models and gives technical teams SQL evidence for each prediction.
+## Next Steps
 
-**Note:** Sample values may change after data refreshes or rebuilds. Focus on the expected result pattern and the business takeaway, not the exact values.
+Congratulations on completing the Oracle Machine Learning lab. You inspected models, generated model scores, checked how often a prediction matched the demo label, and compared predicted revenue to target revenue. For a deeper hands-on workshop focused on Oracle Machine Learning, open the [Oracle Machine Learning LiveLabs workshop](https://livelabs.oracle.com/ords/r/dbpm/livelabs/view-workshop?clear=RR,180&wid=922).
 
 ## Acknowledgements
 
