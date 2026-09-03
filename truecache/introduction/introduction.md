@@ -34,6 +34,15 @@ Once you complete your setup, the next lab will cover:
 - Familiarity with Oracle Cloud Infrastructure (OCI) is helpful
 - Familiarity with podman/docker is helpful
 
+## DBW26 Experience
+
+The DBW26 workshop provides two paths through the same six-step demonstration:
+
+- **FastLab:** use the visual command center for a quick guided demonstration.
+- **Full LiveLab:** use the terminal to run the database, Java, and Podman commands directly.
+
+The workflow covers environment validation, JDBC routing, cache KEEP and warmup, Primary versus True Cache read performance, availability while Primary is stopped, and semantic payment search with Oracle AI Vector Search. The Full LiveLab path starts with one hidden password prompt and one `sudo -s` host session; later steps continue in the same sessions.
+
 ## Learn More
 - [True Cache documentation] (https://docs.oracle.com/en/database/oracle/oracle-database/23/odbtc/overview-oracle-true-cache.html)
 
