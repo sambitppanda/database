@@ -69,6 +69,6 @@ This lab assumes you have:
 
 
 ## Acknowledgements
-* **Authors** - Sambit Panda, Consulting Member of Technical Staff , Vivek Vishwanathan Software Developer, Oracle Database Product Management
-* **Contributors** - Pankaj Chandiramani, Shefali Bhargava, Jyoti Verma, Ilam Siva
-* **Last Updated By/Date** - Sambit Panda, Consulting Member of Technical Staff, Aug 2025
+* **Authors** - Sambit Panda, Consulting Member of Technical Staff, Oracle Database Product Management
+* **Contributors** - Pankaj Chandiramani, Shefali Bhargava, Jyoti Verma, Nithin T N
+* **Last Updated By/Date** - Sambit Panda, Consulting Member of Technical Staff, Sep 2026

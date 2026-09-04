@@ -18,18 +18,19 @@ This lab assumes you have:
 - An Oracle Cloud account
 
 ## Task 1: Download Oracle Resource Manager (ORM) stack zip file
-1.  Click on the link below to download the Resource Manager zip file you need to build your environment: [true-cache.zip](https://c4u04.objectstorage.us-ashburn-1.oci.customer-oci.com/p/EcTjWk2IuZPZeNnD_fYMcgUhdNDIDA6rt9gaFj_WZMiL7VvxPBNMY60837hu5hga/n/c4u04/b/livelabsfiles/o/data-management-library-files/true-cache.zip)
+1.  Click on the link below to download the validated Resource Manager zip file you need to build your environment: [true-cache.zip](https://oracle-livelabs.github.io/database/truecache/prepare-setup/files/true-cache.zip)
 
 2.  Save in your downloads folder.
 
-We strongly recommend using this stack to create a self-contained/dedicated VCN with your instance(s). Skip to *Step 3* to follow our recommendations. If you would rather use an exiting VCN then proceed to the next step as indicated below to update your existing VCN with the required Egress rules.
+We strongly recommend using this stack to create a self-contained/dedicated VCN with your instance(s). Skip to *Step 3* to follow our recommendations. If you would rather use an existing VCN then proceed to the next step as indicated below to update your existing VCN with the required ingress rules.
 
 ## Task 2: Adding Security Rules to an Existing VCN   
-This workshop requires a certain number of ports to be available, a requirement that can be met by using the default ORM stack execution that creates a dedicated VCN. In order to use an existing VCN the following ports should be added to Egress rules
+This workshop requires a certain number of ports to be available, a requirement that can be met by using the default ORM stack execution that creates a dedicated VCN. In order to use an existing VCN, add the following ports to the VCN's ingress rules:
 
 | Port           |Description                            |
 | :------------- | :------------------------------------ |
 | 22             | SSH                                   |
+| 80             | noVNC through NGINX                   |
 | 6080           | noVNC Remote Desktop                  |
 
 1.  Go to *Networking >> Virtual Cloud Networks*
@@ -54,6 +55,6 @@ Please note for True Cache Replication Lab:
 You may now proceed to the next lab.
 
 ## Acknowledgements
-* **Authors** - Sambit Panda, Consulting Member of Technical Staff , Vivek Vishwanathan Software Developer, Oracle Database Product Management
-* **Contributors** - Pankaj Chandiramani, Shefali Bhargava, Jyoti Verma, Ilam Siva
-* **Last Updated By/Date** - Sambit Panda, Consulting Member of Technical Staff, Aug 2025
+* **Authors** - Sambit Panda, Consulting Member of Technical Staff, Oracle Database Product Management
+* **Contributors** - Pankaj Chandiramani, Shefali Bhargava, Jyoti Verma, Nithin T N
+* **Last Updated By/Date** - Sambit Panda, Consulting Member of Technical Staff, Sep 2026

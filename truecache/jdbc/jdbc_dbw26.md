@@ -259,6 +259,6 @@ Continue to [Semantic Cache Using Vector Search](../vector-search/vector-search_
 
 ## Acknowledgements
 
-* **Authors** - Sambit Panda, Consulting Member of Technical Staff, Vivek Vishwanathan Software Developer, Oracle Database Product Management
-* **Contributors** - Pankaj Chandiramani, Shefali Bhargava, Jyoti Verma, Ilam Siva
-* **Last Updated By/Date** - Sambit Panda, Consulting Member of Technical Staff, September 2026
+* **Authors** - Sambit Panda, Consulting Member of Technical Staff, Oracle Database Product Management
+* **Contributors** - Pankaj Chandiramani, Shefali Bhargava, Jyoti Verma, Nithin T N
+* **Last Updated By/Date** - Sambit Panda, Consulting Member of Technical Staff, Sep 2026
