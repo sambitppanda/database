@@ -18,7 +18,7 @@ Estimated Time: 15 minutes.
 - Run similar-payment, account-behavior, and cross-border queries through True Cache.
 - Understand why the result is the top five rows and how to read cosine distance.
 
-## Step 6: Semantic Cache Using Vector Search
+## Task 1: Semantic Cache Using Vector Search
 
 ### FastLab
 
@@ -216,3 +216,9 @@ The lab is complete when:
 - The account behavior query returns the closest rows for the selected account.
 - The cross-border query returns the closest rows from another country.
 - The SQL and distance value are understood for each search.
+
+## Acknowledgements
+
+* **Authors** - Sambit Panda, Consulting Member of Technical Staff, Oracle Database Product Management
+* **Contributors** - Pankaj Chandiramani, Shefali Bhargava, Jyoti Verma, Nithin T N
+* **Last Updated By/Date** - Sambit Panda, Consulting Member of Technical Staff, Sep 2026

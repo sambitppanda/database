@@ -74,7 +74,7 @@ FastLab uses a host-level web proxy in addition to the `prod`, `truedb`, and `ap
 
 If one of the named containers does not exist, stop the lab and contact the lab administrator. The instance does not contain the pre-provisioned environment required by FastLab.
 
-## Ready Check
+## Task 1: Ready Check
 
 1. Wait for the environment check to finish.
 2. Confirm that **Primary DB**, **True Cache**, and **App Server** show **HEALTHY**.
@@ -84,7 +84,7 @@ The environment is pre-provisioned. This step confirms that the services needed 
 
 ![FastLab ready check](images/fastlab-ready-check.png " ")
 
-## Routing Demo
+## Task 2: Routing Demo
 
 1. Select **Run True Cache Validation**.
 2. Select **Run BasicApp setReadOnly Test**.
@@ -96,7 +96,7 @@ This demonstrates the application behavior that makes True Cache transparent to 
 
 ![FastLab routing demo](images/fastlab-routing-demo.png " ")
 
-## Cache Warmup
+## Task 3: Cache Warmup
 
 1. Select **ACCOUNTS** and **PAYMENTS**.
 2. Select **Apply KEEP**.
@@ -110,7 +110,7 @@ Keeping the objects tells True Cache which transaction data should remain in its
 
 ![FastLab cache warmup](images/fastlab-cache-warmup.png " ")
 
-## Primary vs True Cache Performance and Lag
+## Task 4: Primary vs True Cache Performance and Lag
 
 1. Leave the default thread and duration values selected.
 2. FastLab starts three update-only background jobs on Primary automatically. These jobs update existing `ACCOUNTS` rows and create write and replication activity; they do not add rows to the dataset.
@@ -128,7 +128,7 @@ The read comparison is intentionally shown separately from the write activity. P
 
 ![FastLab performance proof](images/fastlab-performance-proof.png " ")
 
-## Availability: Primary Down, True Cache Still Serving
+## Task 5: Availability: Primary Down, True Cache Still Serving
 
 1. Select **Start Comparison** and allow both read paths to begin.
 2. Select **Stop Primary**.
@@ -142,7 +142,7 @@ True Cache is a read-only replica. It can continue to answer eligible read-only 
 
 ![FastLab failover demo](images/fastlab-failover-demo.png " ")
 
-## Semantic Cache Using Vector Search
+## Task 6: Semantic Cache Using Vector Search
 
 1. Select a payment from the reference-payment list. The selected payment supplies the vector used for the search.
 2. Choose an investigation:
@@ -179,3 +179,9 @@ The FastLab is complete when:
 [Oracle True Cache documentation](https://docs.oracle.com/en/database/oracle/oracle-database/23/odbtc/using-oracle-true-cache-your-applications.html)
 
 [Using Vectors with Oracle True Cache](https://blogs.oracle.com/database/using-vectors-with-oracle-true-cache)
+
+## Acknowledgements
+
+* **Authors** - Sambit Panda, Consulting Member of Technical Staff, Oracle Database Product Management
+* **Contributors** - Pankaj Chandiramani, Shefali Bhargava, Jyoti Verma, Nithin T N
+* **Last Updated By/Date** - Sambit Panda, Consulting Member of Technical Staff, Sep 2026
