@@ -2,7 +2,7 @@
 
 ## Introduction
 
-FastLab is a visual, six-step demonstration of Oracle True Cache. The command center uses the pre-provisioned transaction environment and runs the database checks, JDBC workloads, cache warmup, availability test, and vector searches through guided controls.
+FastLab is a visual, six-step demonstration of Oracle True Cache. Open the command center and follow the single guided flow; no experience chooser or separate command-line lab is required. The command center uses the pre-provisioned transaction environment and runs the database checks, JDBC workloads, cache warmup, availability test, and vector searches through guided controls.
 
 The environment contains the `TRANSACTIONS` schema with preloaded `ACCOUNTS`, `PAYMENTS`, and payment-vector sample data. FastLab performs the demonstration without requiring terminal commands or manual database setup.
 
@@ -20,14 +20,12 @@ Estimated Time: 25 minutes.
 ## Before You Begin
 
 1. Open the LiveLabs desktop and launch the True Cache LiveLab UI.
-2. Select **FastLab: Quick Guided Demo** from the experience chooser.
+2. Open `http://127.0.0.1:8080` in the LiveLabs desktop browser. FastLab opens directly; there is no experience chooser.
 3. Keep the command center open while completing each step. The right-hand panel shows environment health, the current workload, and the command or query being demonstrated behind the active step.
-
-![FastLab experience chooser](images/fastlab-experience-chooser.png " ")
 
 ## FastLab Validation and Recovery
 
-FastLab uses a host-level web proxy in addition to the `prod`, `truedb`, and `appclient` containers. The proxy is not a `truecache-ui.service` systemd service, so a missing systemd unit does not indicate a database failure.
+FastLab uses a host-level web proxy in addition to the `prod`, `truedb`, and `appclient` containers. The proxy is managed by `truecache-ui.service`.
 
 ### If the FastLab page does not open
 
@@ -39,12 +37,12 @@ FastLab uses a host-level web proxy in addition to the `prod`, `truedb`, and `ap
     </copy>
     ```
 
-2. If there is no listener, start the UI proxy from the supplied application directory:
+2. If there is no listener, check and restart the UI service:
 
     ```
     <copy>
-    cd /home/opc/LiveLabs_clientapp_warmup_Jul2025-1
-    sudo bash ./redeploy.sh --no-ui-build
+    sudo systemctl status truecache-ui.service --no-pager
+    sudo systemctl restart truecache-ui.service
     </copy>
     ```
 
@@ -99,8 +97,8 @@ This demonstrates the application behavior that makes True Cache transparent to 
 ## Task 3: Cache Warmup
 
 1. Select **ACCOUNTS** and **PAYMENTS**.
-2. Select **Apply KEEP**.
-3. Confirm that each selected table and its available indexes appear as **KEPT** in the object list.
+2. Select **Apply KEEP**. KEEP applies only to selected tables and their available indexes.
+3. Confirm that each selected table and its available indexes appear as **KEPT** in the object list. Leave `PAYMENT_VECTORS` unselected in this step; the vector search step uses it after its vector index is already provisioned.
 4. Select **Warm Up**.
 5. Wait for the table, index, and overall progress indicators to complete.
 6. Expand **Performance timelines** or the cache statistics panel to review the resulting hit-ratio and fetch statistics.
@@ -117,7 +115,7 @@ Keeping the objects tells True Cache which transaction data should remain in its
 3. Allow the background jobs to run briefly before starting the read workload.
 4. Select **Run: Primary Only** and review the Primary read TPS and latency.
 5. Select **Run: True Cache** and review the True Cache read TPS and latency.
-6. Select **Run Parallel Comparison** when you want to see both read paths during the same interval. Compare the live read chart, read TPS cards, and latency table.
+6. Compare the live read chart, read TPS cards, and latency table. The Primary and True Cache runs are separate read legs so the effect of Primary write pressure is easy to interpret.
 7. Expand **Performance timelines** to review:
    - Transport lag and apply lag from replication.
    - True Cache, RAM, and flash hit ratios.
@@ -130,8 +128,8 @@ The read comparison is intentionally shown separately from the write activity. P
 
 ## Task 5: Availability: Primary Down, True Cache Still Serving
 
-1. Select **Start Comparison** and allow both read paths to begin.
-2. Select **Stop Primary**.
+1. Select **Start Parallel Workload**. This starts read activity on both Primary and True Cache.
+2. Select **Kill Primary DB**.
 3. Confirm that Primary changes to an unavailable state while True Cache remains healthy.
 4. Review the True Cache read TPS and the logical-connection status in the right-hand panel.
 5. Select **Restore Primary**.

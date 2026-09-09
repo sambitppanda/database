@@ -42,7 +42,7 @@ Open Primary SQL*Plus:
 
 ~~~text
 <copy>
-podman exec -it prod /bin/bash
+sudo podman exec -it prod /bin/bash
 export ORACLE_SID=ORCLCDB
 sqlplus / as sysdba
 alter session set container=ORCLPDB1;
@@ -105,15 +105,23 @@ select count(*) vector_rows from TRANSACTIONS.PAYMENT_VECTORS;
 </copy>
 ~~~
 
-Create the cosine IVF vector index:
+Create the cosine IVF vector index, or rebuild it if the table was refreshed. Truncating an IVF base table marks its vector index unusable, so the existing-index branch must rebuild it before searching:
 
 ~~~text
 <copy>
+declare
+  v_index_count number;
 begin
-  execute immediate 'create vector index TRANSACTIONS.PAYMENT_VECTORS_IVF_IDX on TRANSACTIONS.PAYMENT_VECTORS (embedding) organization neighbor partitions distance cosine with target accuracy 90';
-exception
-  when others then
-    if sqlcode not in (-955, -1408) then raise; end if;
+  select count(*)
+    into v_index_count
+    from dba_indexes
+   where owner = 'TRANSACTIONS'
+     and index_name = 'PAYMENT_VECTORS_IVF_IDX';
+  if v_index_count = 0 then
+    execute immediate 'create vector index TRANSACTIONS.PAYMENT_VECTORS_IVF_IDX on TRANSACTIONS.PAYMENT_VECTORS (embedding) organization neighbor partitions distance cosine with target accuracy 90';
+  else
+    execute immediate 'alter index TRANSACTIONS.PAYMENT_VECTORS_IVF_IDX rebuild online';
+  end if;
 end;
 /
 select index_name, index_type, status
@@ -146,7 +154,7 @@ Run the nearest-neighbor query through True Cache. Replace 1 with the payment ID
 
 ~~~text
 <copy>
-podman exec -it truedb /bin/bash
+sudo podman exec -it truedb /bin/bash
 export ORACLE_SID=TRUEDB
 sqlplus / as sysdba
 set pages 100 lines 220
@@ -211,7 +219,7 @@ This query looks for similar payment profiles from another country. The country 
 The lab is complete when:
 
 - PAYMENT_VECTORS contains the payment embedding sample.
-- PAYMENT_VECTORS_IVF_IDX is present.
+- PAYMENT_VECTORS_IVF_IDX is present and **VALID**.
 - The similar-payment query returns five rows through True Cache.
 - The account behavior query returns the closest rows for the selected account.
 - The cross-border query returns the closest rows from another country.

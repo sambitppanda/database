@@ -2,12 +2,7 @@
 
 ## Introduction
 
-In this lab, you will validate the pre-provisioned Oracle True Cache environment and choose how you want to run the workshop.
-
-The DBW26 workshop supports two equal paths:
-
-- **FastLab - Quick guided demo:** a visual command-center experience for a short guided demonstration.
-- **Full LiveLab - Command-line workshop:** a documentation-style path where you copy commands into the terminal and see the database, Java, and container operations directly.
+In this lab, you will validate the pre-provisioned Oracle True Cache environment before continuing through the detailed command-line labs. The visual FastLab is a separate tutorial in the workshop menu and opens directly at the local command center.
 
 *Estimated Time:* 10 Minutes.
 
@@ -18,8 +13,8 @@ Watch the video for a quick walk through of the Lab1.
 
 ### Objectives
 - Validate that the Primary database, True Cache, and app containers are running.
-- Open the Oracle True Cache LiveLab UI.
-- Choose either the FastLab quick guided demo or the Full LiveLab command-line workshop.
+- Open the remote desktop terminal used by the detailed command-line labs.
+- Confirm that the Primary database, True Cache, and application containers are ready.
 
 ### Prerequisites
 This lab assumes you have:
@@ -78,16 +73,16 @@ The FastLab web proxy runs on the host and listens on port `8080`; it is separat
         </copy>
         ```
 
-If no process is listening, restart the supplied proxy from the application directory:
+If no process is listening, check and restart the supplied UI service:
 
         ```
         <copy>
-        cd /home/opc/LiveLabs_clientapp_warmup_Jul2025-1
-        sudo bash ./redeploy.sh --no-ui-build
+        sudo systemctl status truecache-ui.service --no-pager
+        sudo systemctl restart truecache-ui.service
         </copy>
         ```
 
-Refresh the browser after the command completes. The proxy is not managed by `truecache-ui.service`, so `Unit truecache-ui.service does not exist` is expected on images that use this deployment layout.
+Refresh `http://127.0.0.1:8080` after the service is active. FastLab opens directly; there is no experience chooser.
 
 ### Recover stopped or unhealthy containers
 
@@ -102,22 +97,10 @@ If `prod`, `truedb`, or `appclient` is stopped, start the pre-provisioned contai
 
 Allow several minutes for the Oracle database containers to become healthy after a restart. Do not continue until `prod` and `truedb` report **healthy** and all three containers are running. If a named container is missing from `sudo podman ps -a`, the instance was not provisioned with the required lab environment and must be restored by the lab administrator.
 
-## Task 2: Open the True Cache LiveLab UI
+## Task 2: Open the True Cache LiveLab UI (Optional)
 
-1. Open a browser in the remote desktop and navigate to the LiveLab UI URL provided for your environment.
-
-2. The first screen asks you to choose how to run the lab.
-
-    ![True Cache LiveLab experience chooser](images/truecache-experience-chooser.png " ")
-
-3. Select one of the following:
-
-    - **FastLab** for the quick guided demo.
-    - **Full LiveLab** for the command-line workshop.
-
-4. You can switch between modes later from the left navigation.
-
-![Full LiveLab environment](images/full-livelab-environment.png " ")
+1. If you are using the visual FastLab tutorial, open a browser in the remote desktop and navigate to `http://127.0.0.1:8080`.
+2. FastLab opens directly to its six-step flow. The command-line labs remain available as separate tutorials in the workshop menu.
 
 ## Task 3: Validate True Cache Services from the Terminal
 

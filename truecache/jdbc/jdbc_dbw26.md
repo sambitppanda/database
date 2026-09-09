@@ -62,7 +62,7 @@ The result identifies the database role used by the read-only operation. The con
 3. FastLab starts the Primary background read/write activity before the comparison.
 4. Select **Run: Primary Only** and review Primary read TPS.
 5. Select **Run: True Cache** and review True Cache read TPS and latency.
-6. Select **Run Parallel Comparison** and compare the read chart, TPS cards, and latency table.
+6. Compare the read chart, TPS cards, and latency table. The Primary and True Cache runs are separate read legs so the effect of Primary write pressure is easy to interpret.
 7. Expand **Performance timelines** to review lag, hit ratios, and fetch latency.
 
 ### Full LiveLab
@@ -156,8 +156,8 @@ The workload output reports read TPS and read node values. The diagnostics show 
 ### FastLab
 
 1. Open **Step 5: Failover Demo**.
-2. Select **Start Comparison**.
-3. Select **Stop Primary**.
+2. Select **Start Parallel Workload**. This starts read activity on both Primary and True Cache.
+3. Select **Kill Primary DB**.
 4. Review True Cache read TPS while Primary is stopped.
 5. Select **Restore Primary**.
 6. Wait for Primary and True Cache to show **HEALTHY**.
