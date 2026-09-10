@@ -58,5 +58,5 @@ Q: How does the Oracle 23ai JDBC driver manage connections when the application 
 ## Acknowledgements
 
 * **Authors** - Sambit Panda, Consulting Member of Technical Staff, Oracle Database Product Management
-* **Contributors** - Pankaj Chandiramani, Shefali Bhargava, Jyoti Verma, Nithin T N
+* **Contributors** - Pankaj Chandiramani, Shefali Bhargava, Jyoti Verma, Nithin Thekkupadam Narayanan
 * **Last Updated By/Date** - Sambit Panda, Consulting Member of Technical Staff, Sep 2026

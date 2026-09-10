@@ -2,9 +2,9 @@
 
 ## Introduction
 
-This lab adds semantic retrieval to the existing TRANSACTIONS payment workflow. The vector table is built from PAYMENTS, so the search results remain natural to the current schema. The query runs against True Cache and returns the most similar payment profiles.
+This lab adds semantic retrieval to the existing TRANSACTIONS payment workflow using Oracle AI Vector Search and Oracle True Cache. Semantic caching allows semantically similar requests to be served directly from True Cache, reducing repeated vector searches, LLM calls and token usage, which helps lower latency and AI costs while offloading the primary database.
 
-The environment includes a 20,000-row PAYMENT_VECTORS sample. The commands below also show how to create the table, generate embeddings, and create the vector index from the existing payment data.
+The vector table is built from PAYMENTS, keeping the search results aligned with the existing schema. The environment includes a 20,000-row PAYMENT_VECTORS sample, and the lab demonstrates how to create the table, generate embeddings, build the vector index, and run similarity searches against True Cache.
 
 ![Full LiveLab semantic cache using vector search](images/full-livelab-vector-search.png " ")
 
@@ -19,22 +19,6 @@ Estimated Time: 15 minutes.
 - Understand why the result is the top five rows and how to read cosine distance.
 
 ## Task 1: Semantic Cache Using Vector Search
-
-### FastLab
-
-1. Open **Semantic Cache Using Vector Search**.
-2. Select a payment from the payment list.
-3. Choose one investigation:
-   - **Find similar payments:** nearest profiles across the vector sample.
-   - **Account behavior:** nearest profiles from the same account.
-   - **Cross-border risk:** nearest profiles from another country.
-   - **Recent activity:** nearest profiles from the last 30 days.
-   - **Similar amount profile:** payments with a similar amount and vector profile.
-4. Review the SQL shown in **Behind this step**.
-5. Read the distance column. A smaller cosine distance means a more similar vector profile.
-6. Confirm that the result is routed through True Cache.
-
-### Full LiveLab
 
 Run the following commands in the host terminal. The database commands use SYSDBA authentication inside the database containers, so no database password is placed in a command or displayed on screen.
 
@@ -105,6 +89,8 @@ select count(*) vector_rows from TRANSACTIONS.PAYMENT_VECTORS;
 </copy>
 ~~~
 
+Expected result: the count is 20,000 in the pre-provisioned sample. If you initialized the table yourself, the count reflects the rows available in `PAYMENTS` up to the 20,000-row sample limit.
+
 Create the cosine IVF vector index, or rebuild it if the table was refreshed. Truncating an IVF base table marks its vector index unusable, so the existing-index branch must rebuild it before searching:
 
 ~~~text
@@ -130,6 +116,8 @@ where owner = 'TRANSACTIONS'
   and index_name = 'PAYMENT_VECTORS_IVF_IDX';
 </copy>
 ~~~
+
+Expected result: `PAYMENT_VECTORS_IVF_IDX` is listed with a vector index type and status **VALID**.
 
 Select a reference payment:
 
@@ -228,5 +216,5 @@ The lab is complete when:
 ## Acknowledgements
 
 * **Authors** - Sambit Panda, Consulting Member of Technical Staff, Oracle Database Product Management
-* **Contributors** - Pankaj Chandiramani, Shefali Bhargava, Jyoti Verma, Nithin T N
+* **Contributors** - Pankaj Chandiramani, Shefali Bhargava, Jyoti Verma, Nithin Thekkupadam Narayanan
 * **Last Updated By/Date** - Sambit Panda, Consulting Member of Technical Staff, Sep 2026

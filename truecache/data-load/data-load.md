@@ -158,9 +158,9 @@ sqlplus transactions/<***PASSWORDFROMSTEP1****>@truedb:1521/SALES1_TC
 You may now proceed to the next lab.
 
 ## Learn More
-[True Cache documentation] (https://docs.oracle.com/en/database/oracle/oracle-database/23/odbtc/configuring-true-cache.html)
+[True Cache documentation](https://docs.oracle.com/en/database/oracle/oracle-database/23/odbtc/configuring-true-cache.html)
 
 ## Acknowledgements
 * **Authors** - Sambit Panda, Consulting Member of Technical Staff, Oracle Database Product Management
-* **Contributors** - Pankaj Chandiramani, Shefali Bhargava, Jyoti Verma, Nithin T N
+* **Contributors** - Pankaj Chandiramani, Shefali Bhargava, Jyoti Verma, Nithin Thekkupadam Narayanan
 * **Last Updated By/Date** - Sambit Panda, Consulting Member of Technical Staff, Sep 2026

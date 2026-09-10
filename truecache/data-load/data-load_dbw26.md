@@ -14,11 +14,6 @@ Watch the video for a quick walk through of the Lab2.
 [Lab2](videohub:1_yayzolzj)
 </if>
 
-### About Oracle True Cache
-Modern applications often require massive scalability in terms of both the number of connections and the amount of data that can be cached.
-
-Oracle True Cache satisfies queries by using only data from its buffer cache. Like Oracle Active Data Guard, True Cache is a fully functional, read-only replication of the primary database, except that it is mostly diskless.
-
 ### Objectives
 
 In this lab, you will:
@@ -27,7 +22,7 @@ In this lab, you will:
 * Warm True Cache through the Java client application.
 * Check True Cache warmup and hit-ratio evidence.
 
-### Prerequisites (Optional)
+### Prerequisites
 
 This lab assumes you have:
 * An Oracle Cloud account
@@ -52,7 +47,7 @@ This lab assumes you have:
     </copy>
     ```
 
-2. The output should include the `TRANSACTIONS` schema and tables such as `ACCOUNTS` and `PAYMENTS`.
+2. The output should include owner `TRANSACTIONS` and tables such as `ACCOUNTS`, `PAYMENTS`, and `PAYMENT_VECTORS`. The exact row order can vary.
 
 ## Task 2: Apply KEEP and Verify the Keep List
 
@@ -76,7 +71,7 @@ This lab assumes you have:
     </copy>
     ```
 
-2. Confirm that kept objects are listed.
+2. Confirm that the kept objects are listed. The result should include `ACCOUNTS`, `ACCOUNTS_PK`, `PAYMENTS`, `PAYMENTS_PK`, and `PAYMENTS_UK` under owner `TRANSACTIONS`. `PAYMENT_VECTORS` is intentionally handled in the vector-search lab.
 
 ## Task 3: Warm True Cache
 
@@ -107,12 +102,14 @@ This lab assumes you have:
     </copy>
     ```
 
+    The query returns one row for each True Cache statistic. Review the prewarm progress, cache-hit ratios, and fetch-latency values; the numeric values depend on the current cache state and workload.
+
 You may now proceed to the next lab.
 
 ## Learn More
-[True Cache documentation for internal purposes] (https://docs-uat.us.oracle.com/en/database/oracle/oracle-database/23/odbtc/oracle-true-cache.html#GUID-147CD53B-DEA7-438C-9639-EDC18DAB114B)
+[True Cache documentation](https://docs.oracle.com/en/database/oracle/oracle-database/23/odbtc/overview-oracle-true-cache.html)
 
 ## Acknowledgements
 * **Authors** - Sambit Panda, Consulting Member of Technical Staff, Oracle Database Product Management
-* **Contributors** - Pankaj Chandiramani, Shefali Bhargava, Jyoti Verma, Nithin T N
+* **Contributors** - Pankaj Chandiramani, Shefali Bhargava, Jyoti Verma, Nithin Thekkupadam Narayanan
 * **Last Updated By/Date** - Sambit Panda, Consulting Member of Technical Staff, Sep 2026

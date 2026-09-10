@@ -18,7 +18,7 @@ The command-line path uses one application-container shell and one database-cont
 
 ## Application Container Session
 
-Open the application container once. Enter the password through the hidden prompt so it is not printed:
+Open the application container once. Enter the password through the hidden prompt so that it is not displayed on screen:
 
 ~~~text
 <copy>
@@ -28,18 +28,9 @@ cd /stage/clientapp
 </copy>
 ~~~
 
-Keep this application shell open through the routing, performance, and availability steps.
+Keep this application shell open throughout the remainder of this lab.
 
-## Step 2: Routing Validation
-
-### FastLab
-
-1. Open **Step 2: Routing Demo**.
-2. Select **Run True Cache Validation**.
-3. Select **Run BasicApp setReadOnly Test**.
-4. Review the routing evidence and continue.
-
-### Full LiveLab
+## Task 1: Validate JDBC Routing
 
 Run the supplied BasicApp from the application container:
 
@@ -51,23 +42,11 @@ cd /stage/clientapp
 </copy>
 ~~~
 
-The result identifies the database role used by the read-only operation. The connection uses Primary for read-write work and can use True Cache for read-only work.
+The result identifies the database role used by the read-only operation. The application uses one logical connection; the JDBC driver routes read-only queries to True Cache and sends read-write operations to Primary.
 
-## Step 4: Primary vs True Cache Performance and Lag
+## Task 2: Compare Primary and True Cache Performance and Lag
 
-### FastLab
-
-1. Open **Step 4: Performance Proof**.
-2. Keep the default thread and duration values.
-3. FastLab starts the Primary background read/write activity before the comparison.
-4. Select **Run: Primary Only** and review Primary read TPS.
-5. Select **Run: True Cache** and review True Cache read TPS and latency.
-6. Compare the read chart, TPS cards, and latency table. The Primary and True Cache runs are separate read legs so the effect of Primary write pressure is easy to interpret.
-7. Expand **Performance timelines** to review lag, hit ratios, and fetch latency.
-
-### Full LiveLab
-
-Start three update-only workers in a separate host terminal. Enter the Primary container once:
+In a separate host terminal, enter the Primary container once and start three update-only workers. Keep this shell open until you run the cleanup command below:
 
 ~~~text
 <copy>
@@ -87,9 +66,9 @@ cat /tmp/tcwrite.pids
 </copy>
 ~~~
 
-These workers update existing ACCOUNTS rows. They do not add rows to the dataset.
+These workers update existing `ACCOUNTS` rows. They do not add rows to the dataset.
 
-From the application container shell, run the Primary read baseline:
+From the application-container shell, run the Primary read baseline. This is the reference read-throughput measurement for the same workload:
 
 ~~~text
 <copy>
@@ -121,7 +100,7 @@ grep -E 'ReadTPS|Read TPS|readNode' /tmp/primary-read.log /tmp/truecache-read.lo
 </copy>
 ~~~
 
-While the comparison runs, open another host terminal and enter True Cache once:
+While the comparison runs, open another host terminal, enter the True Cache container once, and run the following diagnostics. They capture replication lag, cache-hit ratios, and fetch latency while the read workload is active:
 
 ~~~text
 <copy>
@@ -137,6 +116,8 @@ exit
 </copy>
 ~~~
 
+Expected output: `v$dataguard_stats` reports the transport and apply lag values, while `v$true_cache_stat` reports cache-hit ratios, prewarm progress, apply timing, and single-block, multiblock, and list-of-blocks fetch latency. The exact values vary with the workload; the important result is that the queries return current statistics while the read paths are active.
+
 Stop the update workers in the original Primary container shell:
 
 ~~~text
@@ -147,22 +128,11 @@ exit
 </copy>
 ~~~
 
-The workload output reports read TPS and read node values. The diagnostics show the replication and cache values used by the FastLab performance panel.
+The workload output reports read TPS and the last read node. The Primary run should identify Primary as its read node, and the direct True Cache run should identify True Cache. The diagnostics show the replication and cache values used to interpret the comparison.
 
 ![Full LiveLab performance and lag](images/full-livelab-performance.png " ")
 
-## Step 5: Availability - Primary Down, True Cache Still Serving
-
-### FastLab
-
-1. Open **Step 5: Failover Demo**.
-2. Select **Start Parallel Workload**. This starts read activity on both Primary and True Cache.
-3. Select **Kill Primary DB**.
-4. Review True Cache read TPS while Primary is stopped.
-5. Select **Restore Primary**.
-6. Wait for Primary and True Cache to show **HEALTHY**.
-
-### Full LiveLab
+## Task 3: Verify Availability: True Cache Continues to Serve During Primary Downtime
 
 Use the application-container shell to start both read paths:
 
@@ -188,7 +158,7 @@ sudo podman ps --format 'table {{.Names}}\t{{.Status}}'
 </copy>
 ~~~
 
-Enter True Cache once and verify its role and read service:
+Connect to True Cache and verify its role and read service:
 
 ~~~text
 <copy>
@@ -222,7 +192,7 @@ sudo podman ps --format 'table {{.Names}}\t{{.Status}}'
 </copy>
 ~~~
 
-Enter Primary once and confirm its role and service:
+Connect to the Primary and verify its role and service:
 
 ~~~text
 <copy>
@@ -238,7 +208,7 @@ exit
 </copy>
 ~~~
 
-Return to the application container shell and finish both read workloads:
+After Primary is healthy again, return to the application-container shell, wait for both read processes to finish, and review their final read-node output before closing the shell:
 
 ~~~text
 <copy>
@@ -246,6 +216,8 @@ wait "$PRIMARY_PID" "$TRUECACHE_PID"
 exit
 </copy>
 ~~~
+
+This completes the availability test. The True Cache process should report reads while Primary was stopped, and the Primary process should resume after Primary is restored.
 
 ![Full LiveLab availability test](images/full-livelab-availability.png " ")
 
@@ -260,5 +232,5 @@ Continue to [Semantic Cache Using Vector Search](../vector-search/vector-search_
 ## Acknowledgements
 
 * **Authors** - Sambit Panda, Consulting Member of Technical Staff, Oracle Database Product Management
-* **Contributors** - Pankaj Chandiramani, Shefali Bhargava, Jyoti Verma, Nithin T N
+* **Contributors** - Pankaj Chandiramani, Shefali Bhargava, Jyoti Verma, Nithin Thekkupadam Narayanan
 * **Last Updated By/Date** - Sambit Panda, Consulting Member of Technical Staff, Sep 2026

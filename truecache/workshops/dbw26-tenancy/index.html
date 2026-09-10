@@ -58,6 +58,36 @@
         </div>
       </div>
     </footer>
+    <script>
+    (function () {
+        function resetScroll() {
+            window.scrollTo(0, 0);
+            document.documentElement.scrollTop = 0;
+            document.body.scrollTop = 0;
+            var contentBox = document.getElementById("contentBox");
+            if (contentBox) contentBox.scrollTop = 0;
+        }
+
+        function scheduleReset() {
+            window.setTimeout(resetScroll, 0);
+            window.setTimeout(resetScroll, 250);
+            window.setTimeout(resetScroll, 800);
+        }
+
+        document.addEventListener("click", function (event) {
+            var element = event.target.nodeType === 1 ? event.target : event.target.parentElement;
+            var link = element && element.closest(".hol-Footer a[href*='lab='], .hol-Nav-list a[href*='lab=']");
+            if (!link || !link.href) return;
+            var target = new URL(link.href, window.location.href);
+            var currentLab = new URL(window.location.href).searchParams.get("lab");
+            var targetLab = target.searchParams.get("lab");
+            if (targetLab && targetLab !== currentLab) scheduleReset();
+        }, true);
+
+        window.addEventListener("hashchange", scheduleReset);
+        window.addEventListener("popstate", scheduleReset);
+    }());
+    </script>
 </body>
 
 </html>
