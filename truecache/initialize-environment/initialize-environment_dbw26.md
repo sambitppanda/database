@@ -112,7 +112,7 @@ It may take several minutes for the Oracle database containers to become healthy
     </copy>
     ```
 
-    Expected values are `PHYSICAL STANDBY` with a read-only open mode for True Cache. The service query should list the `SALES1_TC` read service in the `ORCLPDB1` PDB.
+    Expected values are `TRUE CACHE` with `READ ONLY WITH APPLY` open mode for True Cache. The service query should list the `SALES1_TC` read service in the `ORCLPDB1` PDB.
 
 3. Run the BasicApp routing proof.
 

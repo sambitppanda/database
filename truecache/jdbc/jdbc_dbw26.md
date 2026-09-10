@@ -168,7 +168,7 @@ sqlplus / as sysdba
 set pages 100 lines 180
 select database_role, open_mode from v$database;
 alter session set container=ORCLPDB1;
-select name, network_name from v$services where name='SALES1_TC';
+select name, network_name from v$services where upper(name) = 'SALES1_TC';
 exit
 exit
 </copy>
@@ -187,10 +187,23 @@ Restore Primary from the host terminal:
 ~~~text
 <copy>
 sudo podman start prod
-sleep 20
+for attempt in $(seq 1 36); do
+  status=$(sudo podman inspect --format '{{.State.Status}}|{{.State.Health.Status}}' prod 2>/dev/null || true)
+  echo "prod: $status"
+  if [ "$status" = "running|healthy" ]; then
+    break
+  fi
+  sleep 5
+done
+if [ "$status" != "running|healthy" ]; then
+  echo "prod did not become healthy within 3 minutes; do not continue."
+  exit 1
+fi
 sudo podman ps --format 'table {{.Names}}\t{{.Status}}'
 </copy>
 ~~~
+
+Wait for `prod` to report `running|healthy` before continuing. The database may need several minutes to complete startup after the container is restored.
 
 Connect to the Primary and verify its role and service:
 
@@ -202,11 +215,22 @@ sqlplus / as sysdba
 set pages 100 lines 180
 select database_role, open_mode from v$database;
 alter session set container=ORCLPDB1;
-select name, network_name from v$services where name='SALES1';
+declare
+  l_active number;
+begin
+  select count(*) into l_active from v$active_services where upper(name) = 'SALES1';
+  if l_active = 0 then
+    dbms_service.start_service('SALES1');
+  end if;
+end;
+/
+select name, network_name from v$services where upper(name) = 'SALES1';
 exit
 exit
 </copy>
 ~~~
+
+The SQL block starts `SALES1` only when it is not already active, then verifies the service row. Continue only when the query returns `SALES1`.
 
 After Primary is healthy again, return to the application-container shell, wait for both read processes to finish, and review their final read-node output before closing the shell:
 
