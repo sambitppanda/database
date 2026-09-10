@@ -12,7 +12,7 @@ In this lab, you will:
 
 * Review the main purpose of Oracle True Cache
 * Distinguish the roles of different containers used in this workshop
-* Identify different functionality of Oracle True Cache.
+* Identify key Oracle True Cache capabilities.
 
 ### Prerequisites
 
@@ -50,7 +50,7 @@ Q: What is the purpose of the warm-up phase in TransactionsApp.sh before the wor
 > Preloading True Cache primes the cache with relevant objects, making the subsequent True Cache run a fair measure of cached performance.
 
 Q: How does the Oracle 23ai JDBC driver manage connections when the application targets True Cache?
-* The application uses one logical service name while the driver maintains two physical connections and toggles read-only versus read-write calls.
+* The application uses one logical service name. It marks eligible work read-only, and the driver routes that work to True Cache while retaining the Primary connection for read-write work.
 - The driver opens separate JDBC URLs for read and write operations that the application must manage manually.
 - The driver mirrors every statement to both databases to keep them synchronized without application input.
 > The driver abstracts the split by keeping paired physical connections and letting the app flag when a request can be routed to True Cache.

@@ -2,7 +2,7 @@
 
 ## Introduction
 
-FastLab is a visual, six-step demonstration of Oracle True Cache. Open the command center and follow the single guided flow; no experience chooser or separate command-line lab is required. The command center uses the pre-provisioned transaction environment and runs the database checks, JDBC workloads, cache warmup, availability test, and vector searches through guided controls.
+FastLab is a visual, six-step demonstration of Oracle True Cache. Open the command center and follow the guided flow. The command center uses the pre-provisioned transaction environment and runs the database checks, JDBC workloads, cache warmup, availability test, and vector searches through guided controls.
 
 The environment contains the `TRANSACTIONS` schema with preloaded `ACCOUNTS`, `PAYMENTS`, and payment-vector sample data. FastLab performs the demonstration without requiring terminal commands or manual database setup.
 
@@ -13,14 +13,14 @@ Estimated Time: 25 minutes.
 - Confirm that the Primary database, True Cache, and application server are healthy.
 - See read-only work routed to True Cache through one logical connection.
 - Keep and warm the transaction tables and indexes in True Cache.
-- Compare Primary and True Cache read throughput and latency while Primary receives update activity.
+- Compare Primary and True Cache read throughput, measured as transactions per second (TPS), and latency while Primary receives update activity.
 - Verify that True Cache continues serving reads while Primary is unavailable.
 - Use semantic search to find similar payment profiles with Oracle AI Vector Search.
 
 ## Before You Begin
 
 1. Open the LiveLabs desktop and launch the True Cache LiveLab UI.
-2. Open `http://127.0.0.1:8080` in the LiveLabs desktop browser. FastLab opens directly; there is no experience chooser.
+2. Open `http://127.0.0.1:8080` in the LiveLabs desktop browser. FastLab opens directly.
 3. Keep the command center open while completing each step. The right-hand panel shows environment health, the current workload, and the command or query being demonstrated behind the active step.
 
 ## FastLab Validation and Recovery
@@ -97,11 +97,11 @@ This demonstrates the application behavior that makes True Cache transparent to 
 ## Task 3: Cache Warmup
 
 1. Select **ACCOUNTS** and **PAYMENTS**.
-2. Select **Apply KEEP**. KEEP applies only to selected tables and their available indexes.
+2. Select a table. KEEP is applied immediately to the selected table and the indexes available for that table.
 3. Confirm that each selected table and its available indexes appear as **KEPT** in the object list. Leave `PAYMENT_VECTORS` unselected in this step; the vector search step uses it after its vector index is already provisioned.
 4. Select **Warm Up**.
 5. Wait for the table, index, and overall progress indicators to complete.
-6. Expand **Performance timelines** or the cache statistics panel to review the resulting hit-ratio and fetch statistics.
+6. Expand **Performance timelines** or the cache statistics panel to review the resulting hit ratios and fetch statistics.
 7. Select **Next step**.
 
 Keeping the objects tells True Cache which transaction data should remain in its memory cache. The warmup reads the objects before the performance demonstration, so the comparison measures a useful cached-read path rather than an empty cache.
@@ -115,12 +115,14 @@ Keeping the objects tells True Cache which transaction data should remain in its
 3. Allow the background jobs to run briefly before starting the read workload.
 4. Select **Run: Primary Only** and review the Primary read TPS and latency.
 5. Select **Run: True Cache** and review the True Cache read TPS and latency.
-6. Compare the live read chart, read TPS cards, and latency table. The Primary and True Cache runs are separate read legs so the effect of Primary write pressure is easy to interpret.
+6. Compare the live read chart, read TPS cards, and latency table. The Primary and True Cache measurements run as separate read tests, making the effect of Primary write pressure easier to interpret.
 7. Expand **Performance timelines** to review:
    - Transport lag and apply lag from replication.
    - True Cache, RAM, and flash hit ratios.
    - Single-block, multiblock, and list-of-blocks fetch latency.
 8. Select **Next step**.
+
+Each read test runs for the selected duration and stops automatically. The three background update jobs remain active for this step and are stopped automatically when the performance step ends; no additional write statistics are shown in the comparison.
 
 The read comparison is intentionally shown separately from the write activity. Primary continues to handle the updates, while the True Cache read path can serve kept data from memory and receive the replicated changes.
 
@@ -136,17 +138,17 @@ The read comparison is intentionally shown separately from the write activity. P
 6. Wait for Primary and True Cache to return to **HEALTHY**.
 7. Select **Next step**.
 
-True Cache is a read-only replica. It can continue to answer eligible read-only requests from its cache while the Primary database is temporarily unavailable. Writes still require the Primary database.
+True Cache is a read-only replica. This availability scenario models a read-heavy application during a Primary outage: while True Cache remains available and has the required data, it can continue serving eligible read-only requests, while write operations and changes still require the Primary database. The workload stops automatically after the selected duration, and Primary is restored before the next step.
 
 ![FastLab failover demo](images/fastlab-failover-demo.png " ")
 
-## Task 6: Semantic Cache Using Vector Search
+## Task 6: Semantic Retrieval Using Vector Search and True Cache
 
 1. Select a payment from the reference-payment list. The selected payment supplies the vector used for the search.
 2. Choose an investigation:
    - **Find similar payments** compares payment profiles across the vector sample.
    - **Account behavior** restricts the candidates to the selected account.
-   - **Cross-border risk** restricts the candidates to a different country.
+   - **Cross-border similarity** restricts the candidates to a different country.
    - **Recent activity** restricts the candidates to recent payments.
    - **Similar amount profile** finds payments with a similar amount and vector profile.
 3. Read the explanation below the investigation selector. It describes the filter and the vector query used for the selected payment.
@@ -155,15 +157,15 @@ True Cache is a read-only replica. It can continue to answer eligible read-only 
 6. Read **Vector distance** as a similarity score: a smaller cosine distance means the payment profiles point in a more similar direction. The distance is not a currency amount or a percentage.
 7. Try another reference payment or investigation and compare how the candidate filter changes the results.
 
-This step connects the existing payment workflow to Oracle AI Vector Search. The vector represents useful payment attributes such as amount, account behavior, country, and transaction time. True Cache keeps frequently accessed vector data available in memory, allowing eligible semantic retrieval requests to be served close to the application while the Primary database remains the system of record.
+This step connects the existing payment workflow to Oracle AI Vector Search. This lab uses a deterministic 16-dimensional feature vector derived from payment attributes, including amount, account behavior, country, and transaction time. It is a demonstrative similarity representation, not an LLM-generated text embedding. True Cache keeps frequently accessed vector data available in memory, allowing eligible semantic retrieval requests to be served close to the application while the Primary database remains the system of record.
 
-![FastLab semantic cache using vector search](images/fastlab-vector-search.png " ")
+![FastLab semantic retrieval using vector search](images/fastlab-vector-search.png " ")
 
 ## Completion
 
 The FastLab is complete when:
 
-- All three environment services show **HEALTHY**.
+- The Primary database, True Cache, and application server each show **HEALTHY**.
 - The routing evidence identifies True Cache for read-only work.
 - `ACCOUNTS` and `PAYMENTS`, including their selected indexes, show **KEPT**.
 - Cache warmup completes and statistics are visible.

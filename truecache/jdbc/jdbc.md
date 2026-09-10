@@ -25,7 +25,7 @@ This lab assumes you have:
 
 ## Task 1: Run the application
 
-1. Login to application podman container
+1. Log in to the application Podman container.
 
     ```
     <copy>

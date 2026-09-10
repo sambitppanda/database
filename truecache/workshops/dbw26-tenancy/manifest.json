@@ -8,12 +8,12 @@
   "tutorials": [
     {
       "title": "Introduction",
-      "description": "The Introduction is always second for LiveLabs. The title and contents menu title match for the Introduction.",
+      "description": "Overview of Oracle True Cache and the workshop objectives",
       "filename": "../../introduction/introduction.md"
     },
     {
       "title": "Get Started",
-      "description": "Login to Oracle Cloud",
+      "description": "Sign in to Oracle Cloud",
       "filename": "https://livelabs.oracle.com/cdn/common/labs/cloud-login/cloud-login-23ai.md"
     },
     {
@@ -51,14 +51,14 @@
       "type": "nonsandbox"
     },
     {
-      "title": "Lab 6: Semantic Cache Using Vector Search",
+      "title": "Lab 6: Semantic Retrieval Using Vector Search and True Cache",
       "description": "Use native Oracle AI Vector Search with the existing transaction payment data",
       "filename": "../../vector-search/vector-search_dbw26.md",
       "type": "nonsandbox"
     },
     {
-      "title": "Lab 7 : Clean up Stack and Instances",
-      "description": "Clean up ORM Stack and instances",
+      "title": "Clean Up the ORM Stack and Instances",
+      "description": "Release the OCI resources used by the workshop",
       "filename": "../../cleanup/cleanup.md"
     },
     {

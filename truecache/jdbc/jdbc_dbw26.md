@@ -11,10 +11,10 @@ The command-line path uses one application-container shell and one database-cont
 ## Objectives
 
 - Validate JDBC read routing.
-- Compare Primary and True Cache read TPS and latency.
+- Compare Primary and True Cache read throughput, measured as transactions per second (TPS), and latency.
 - Observe transport lag, apply lag, cache hit ratios, and fetch latency.
 - Verify True Cache availability while Primary is stopped.
-- Continue to the separate Semantic Cache Using Vector Search lab.
+- Continue to the separate Semantic Retrieval Using Vector Search and True Cache lab.
 
 ## Application Container Session
 
@@ -247,7 +247,7 @@ This completes the availability test. The True Cache process should report reads
 
 ## Next Lab
 
-Continue to [Semantic Cache Using Vector Search](../vector-search/vector-search_dbw26.md) for the native vector table, embedding, index, and payment investigation queries.
+Continue to [Semantic Retrieval Using Vector Search and True Cache](../vector-search/vector-search_dbw26.md) for the native vector table, deterministic payment feature vectors, vector index, and payment-investigation queries.
 
 ## Learn More
 

@@ -1,24 +1,24 @@
-# Semantic Cache Using Vector Search
+# Semantic Retrieval Using Vector Search and True Cache
 
 ## Introduction
 
-This lab adds semantic retrieval to the existing TRANSACTIONS payment workflow using Oracle AI Vector Search and Oracle True Cache. Semantic caching allows semantically similar requests to be served directly from True Cache, reducing repeated vector searches, LLM calls and token usage, which helps lower latency and AI costs while offloading the primary database.
+This lab adds vector-similarity retrieval to the existing TRANSACTIONS payment workflow by using Oracle AI Vector Search with Oracle True Cache. Eligible read-only similarity queries can be routed to True Cache, reducing Primary database read load and query latency when relevant vector data is available in cache.
 
-The vector table is built from PAYMENTS, keeping the search results aligned with the existing schema. The environment includes a 20,000-row PAYMENT_VECTORS sample, and the lab demonstrates how to create the table, generate embeddings, build the vector index, and run similarity searches against True Cache.
+The vector table is built from PAYMENTS, keeping the search results aligned with the existing schema. The environment includes a 20,000-row PAYMENT_VECTORS sample, and the lab demonstrates how to create the table, create deterministic payment feature vectors, build the vector index, and run similarity searches against True Cache.
 
-![Full LiveLab semantic cache using vector search](images/full-livelab-vector-search.png " ")
+![Full LiveLab semantic retrieval using vector search](images/full-livelab-vector-search.png " ")
 
 Estimated Time: 15 minutes.
 
 ## Objectives
 
 - Create a native Oracle vector table in the TRANSACTIONS schema.
-- Generate 16-dimension payment embeddings from existing payment attributes.
+- Generate 16-dimensional payment feature vectors from existing payment attributes.
 - Create a cosine IVF vector index.
 - Run similar-payment, account-behavior, and cross-border queries through True Cache.
-- Understand why the result is the top five rows and how to read cosine distance.
+- Explain why each query returns the five nearest rows under its filter and how to interpret cosine distance.
 
-## Task 1: Semantic Cache Using Vector Search
+## Task 1: Semantic Retrieval Using Vector Search and True Cache
 
 Run the following commands in the host terminal. The database commands use SYSDBA authentication inside the database containers, so no database password is placed in a command or displayed on screen.
 
@@ -57,7 +57,7 @@ end;
 </copy>
 ~~~
 
-Generate the 16-dimension embedding from the existing payment fields. The first dimensions represent amount, account, country, and transaction time. The stable hash dimensions distinguish otherwise similar payment rows:
+Generate the 16-dimensional payment feature vector from the existing payment fields. The first dimensions encode normalized amount, account, country, and transaction-time features. The remaining deterministic values help distinguish otherwise similar rows. These values are a demonstration feature vector, not a model-generated semantic embedding:
 
 ~~~text
 <copy>
@@ -89,14 +89,15 @@ select count(*) vector_rows from TRANSACTIONS.PAYMENT_VECTORS;
 </copy>
 ~~~
 
-Expected result: the count is 20,000 in the pre-provisioned sample. If you initialized the table yourself, the count reflects the rows available in `PAYMENTS` up to the 20,000-row sample limit.
+Expected result: PAYMENT_VECTORS contains 20,000 rows in the pre-provisioned sample. If you created the table in a different environment, the count reflects the available PAYMENTS rows, up to the 20,000-row limit. If you initialized the table yourself, the count reflects the rows available in `PAYMENTS` up to the 20,000-row sample limit.
 
-Create the cosine IVF vector index, or rebuild it if the table was refreshed. Truncating an IVF base table marks its vector index unusable, so the existing-index branch must rebuild it before searching:
+Create the cosine IVF vector index if it does not exist. Rebuild the index only when it is unusable, for example after truncating the base table:
 
 ~~~text
 <copy>
 declare
   v_index_count number;
+  v_index_status varchar2(20);
 begin
   select count(*)
     into v_index_count
@@ -106,7 +107,10 @@ begin
   if v_index_count = 0 then
     execute immediate 'create vector index TRANSACTIONS.PAYMENT_VECTORS_IVF_IDX on TRANSACTIONS.PAYMENT_VECTORS (embedding) organization neighbor partitions distance cosine with target accuracy 90';
   else
-    execute immediate 'alter index TRANSACTIONS.PAYMENT_VECTORS_IVF_IDX rebuild online';
+    select status into v_index_status from dba_indexes where owner = 'TRANSACTIONS' and index_name = 'PAYMENT_VECTORS_IVF_IDX';
+    if v_index_status = 'UNUSABLE' then
+      execute immediate 'alter index TRANSACTIONS.PAYMENT_VECTORS_IVF_IDX rebuild online';
+    end if;
   end if;
 end;
 /
@@ -117,7 +121,7 @@ where owner = 'TRANSACTIONS'
 </copy>
 ~~~
 
-Expected result: `PAYMENT_VECTORS_IVF_IDX` is listed with a vector index type and status **VALID**.
+Expected result: `PAYMENT_VECTORS_IVF_IDX` is present and **VALID**.
 
 Select a reference payment:
 
@@ -138,7 +142,7 @@ exit
 </copy>
 ~~~
 
-Run the nearest-neighbor query through True Cache. Replace 1 with the payment ID returned above:
+Run the nearest-neighbor query through True Cache. Replace each occurrence of 1 in the query with the payment ID returned by the preceding query:
 
 ~~~text
 <copy>
@@ -159,7 +163,7 @@ fetch first 5 rows only;
 </copy>
 ~~~
 
-This is a nearest-neighbor query. It compares each payment embedding with the selected payment embedding, sorts by cosine distance, and returns the top five rows. A smaller distance means that the numeric profiles are more similar.
+This is a nearest-neighbor query. It compares each payment feature vector with the selected payment feature vector, sorts by cosine distance, and returns the five closest rows. For this demonstration feature vector, a smaller cosine distance indicates a closer match under the encoded numeric features. It is not a currency amount, probability, or business-risk score.
 
 Run the account behavior query:
 
@@ -179,9 +183,9 @@ fetch first 5 rows only;
 </copy>
 ~~~
 
-This query narrows the candidate set to the selected account and then ranks its payments by vector similarity. It demonstrates account behavior without changing the source PAYMENTS table.
+This query limits candidates to the selected account and ranks those payments by vector distance, illustrating an account-scoped similarity search without changing the source PAYMENTS table.
 
-Run the cross-border risk query:
+Run the cross-border similarity query:
 
 ~~~text
 <copy>
@@ -200,18 +204,18 @@ exit
 </copy>
 ~~~
 
-This query looks for similar payment profiles from another country. The country filter provides the investigation scope and the vector distance provides the ranking inside that scope.
+This query finds similar payment profiles from a different country. The country predicate defines the candidate set, and vector distance ranks candidates within that set. It does not calculate a fraud or risk score.
 
 ## Completion
 
 The lab is complete when:
 
-- PAYMENT_VECTORS contains the payment embedding sample.
+- PAYMENT_VECTORS contains the deterministic payment feature-vector sample.
 - PAYMENT_VECTORS_IVF_IDX is present and **VALID**.
 - The similar-payment query returns five rows through True Cache.
 - The account behavior query returns the closest rows for the selected account.
 - The cross-border query returns the closest rows from another country.
-- The SQL and distance value are understood for each search.
+- For each search, you can identify the filter, the reference payment, and the meaning of the returned cosine-distance value.
 
 ## Acknowledgements
 

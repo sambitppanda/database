@@ -9,18 +9,18 @@ The DBW26 environment is already provisioned. You do not need to create the tran
 *Estimated Time:* 20 minutes
 
 <if type="nonsandbox">
-Watch the video for a quick walk through of the Lab2.
-[Lab2](videohub:1_mz228rvo)
-[Lab2](videohub:1_yayzolzj)
+Watch the video for a quick walk-through of Lab 4: Prepare and Warm True Cache.
+[Lab 4](videohub:1_mz228rvo)
+[Lab 4](videohub:1_yayzolzj)
 </if>
 
 ### Objectives
 
 In this lab, you will:
 * Validate the preloaded transactions schema.
-* Apply KEEP to selected objects.
+* Apply KEEP to selected transaction objects.
 * Warm True Cache through the Java client application.
-* Check True Cache warmup and hit-ratio evidence.
+* Review True Cache warm-up progress, cache-hit ratios, and fetch-latency statistics.
 
 ### Prerequisites
 
@@ -104,7 +104,7 @@ This lab assumes you have:
 
     The query returns one row for each True Cache statistic. Review the prewarm progress, cache-hit ratios, and fetch-latency values; the numeric values depend on the current cache state and workload.
 
-You may now proceed to the next lab.
+Continue to the next lab.
 
 ## Learn More
 [True Cache documentation](https://docs.oracle.com/en/database/oracle/oracle-database/23/odbtc/overview-oracle-true-cache.html)

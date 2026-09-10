@@ -134,7 +134,7 @@ This lab assumes you have:
     ```
 ![dataload truecache](https://oracle-livelabs.github.io/database/truecache/data-load/images/dataloadtruecache.png " ")
 
-2. Login to the truecache using the transaction user using the format <truecache_hostname>:1521/SALES1_TC
+2. Log in to True Cache as the transactions user by using the format `<truecache_hostname>:1521/SALES1_TC`.
 
 sqlplus transactions/<***PASSWORDFROMSTEP1****>@truedb:1521/SALES1_TC
 ![dataload truecache login](https://oracle-livelabs.github.io/database/truecache/data-load/images/dataloadtruecachelogin.png " ")
@@ -155,7 +155,7 @@ sqlplus transactions/<***PASSWORDFROMSTEP1****>@truedb:1521/SALES1_TC
     </copy>
     ```
 
-You may now proceed to the next lab.
+Continue to the next lab.
 
 ## Learn More
 [True Cache documentation](https://docs.oracle.com/en/database/oracle/oracle-database/23/odbtc/configuring-true-cache.html)
