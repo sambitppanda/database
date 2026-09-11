@@ -14,7 +14,7 @@ Estimated Time: 25 minutes.
 - See read-only work routed to True Cache through one logical connection.
 - Keep and warm the transaction tables and indexes in True Cache.
 - Compare Primary and True Cache read throughput, measured as transactions per second (TPS), and latency while Primary receives update activity.
-- Verify that True Cache continues serving reads while Primary is unavailable.
+- Verify that True Cache can continue serving eligible read-only requests while the True Cache container and read service remain available during Primary downtime.
 - Use semantic search to find similar payment profiles with Oracle AI Vector Search.
 
 ## Before You Begin
@@ -37,12 +37,12 @@ FastLab uses a host-level web proxy in addition to the `prod`, `truedb`, and `ap
     </copy>
     ```
 
-2. If there is no listener, check and restart the UI service:
+2. If there is no listener, check the UI service and start it if it is inactive:
 
     ```
     <copy>
     sudo systemctl status truecache-ui.service --no-pager
-    sudo systemctl restart truecache-ui.service
+    if ! sudo systemctl is-active --quiet truecache-ui.service; then sudo systemctl start truecache-ui.service; fi
     </copy>
     ```
 
@@ -68,7 +68,8 @@ FastLab uses a host-level web proxy in addition to the `prod`, `truedb`, and `ap
     ```
 
 3. Wait for the database containers to report **healthy**, then refresh the FastLab page. Oracle database startup can take several minutes after a host restart.
-4. Do not begin the guided steps until **Primary DB**, **True Cache**, and **App Server** show **HEALTHY**.
+4. The proxy starts the `SALES1` and `SALES1_TC` database services after the containers are healthy. If either service is still missing, use the idempotent service-start commands in Initialize Environment, Task 2, then refresh the page.
+5. Do not begin the guided steps until **Primary DB**, **True Cache**, and **App Server** show **HEALTHY**.
 
 If one of the named containers does not exist, stop the lab and contact the lab administrator. The instance does not contain the pre-provisioned environment required by FastLab.
 
@@ -96,41 +97,40 @@ This demonstrates the application behavior that makes True Cache transparent to 
 
 ## Task 3: Cache Warmup
 
-1. Select **ACCOUNTS** and **PAYMENTS**.
-2. Select a table. KEEP is applied immediately to the selected table and the indexes available for that table.
-3. Confirm that each selected table and its available indexes appear as **KEPT** in the object list. Leave `PAYMENT_VECTORS` unselected in this step; the vector search step uses it after its vector index is already provisioned.
-4. Select **Warm Up**.
-5. Wait for the table, index, and overall progress indicators to complete.
-6. Expand **Performance timelines** or the cache statistics panel to review the resulting hit ratios and fetch statistics.
-7. Select **Next step**.
+1. Select the checkbox for **ACCOUNTS** and **PAYMENTS**. Selecting a table applies KEEP immediately to that table and the indexes available for it; there is no separate KEEP or UNKEEP action in FastLab.
+2. Confirm that each selected table and its available indexes appear as **KEPT** in the object list. Leave `PAYMENT_VECTORS` unselected; the vector-search step prepares and uses it separately.
+3. Select **Start Warmup (Java app)**.
+4. Wait for the table, index, and overall progress indicators to complete.
+5. Review the cached-data summary and object-wise cache breakdown.
+6. Select **Next step**.
 
-Keeping the objects tells True Cache which transaction data should remain in its memory cache. The warmup reads the objects before the performance demonstration, so the comparison measures a useful cached-read path rather than an empty cache.
+Keeping the objects tells True Cache which transaction tables and indexes to retain for the demonstration. The warmup reads the objects before the performance demonstration, so the comparison measures a useful cache-pool read path rather than an unpopulated cache.
 
 ![FastLab cache warmup](images/fastlab-cache-warmup.png " ")
 
 ## Task 4: Primary vs True Cache Performance and Lag
 
 1. Leave the default thread and duration values selected.
-2. FastLab starts three update-only background jobs on Primary automatically. These jobs update existing `ACCOUNTS` rows and create write and replication activity; they do not add rows to the dataset.
-3. Allow the background jobs to run briefly before starting the read workload.
+2. FastLab starts three bounded, update-only background jobs on Primary automatically when this step opens. They run for 60 seconds, update existing `ACCOUNTS` rows, and create write and replication activity; they do not add rows to the dataset.
+3. Allow the background jobs to run briefly before starting the read workload. They stop automatically after 60 seconds or when you leave this step; no separate background-job control is required.
 4. Select **Run: Primary Only** and review the Primary read TPS and latency.
 5. Select **Run: True Cache** and review the True Cache read TPS and latency.
 6. Compare the live read chart, read TPS cards, and latency table. The Primary and True Cache measurements run as separate read tests, making the effect of Primary write pressure easier to interpret.
-7. Expand **Performance timelines** to review:
+7. Expand **Apply/Transport Lag While Primary Write Load Runs** to review:
    - Transport lag and apply lag from replication.
    - True Cache, RAM, and flash hit ratios.
    - Single-block, multiblock, and list-of-blocks fetch latency.
 8. Select **Next step**.
 
-Each read test runs for the selected duration and stops automatically. The three background update jobs remain active for this step and are stopped automatically when the performance step ends; no additional write statistics are shown in the comparison.
+Each read test runs for the selected duration and stops automatically. The background update jobs are bounded to the performance run and stop automatically when it ends or when the lab is reset; no additional write statistics are shown in the comparison.
 
-The read comparison is intentionally shown separately from the write activity. Primary continues to handle the updates, while the True Cache read path can serve kept data from memory and receive the replicated changes.
+The read comparison is intentionally shown separately from the write activity. Primary continues to handle the updates, while the True Cache read path can serve eligible kept data from its cache pool and receive the replicated changes.
 
 ![FastLab performance proof](images/fastlab-performance-proof.png " ")
 
-## Task 5: Availability: Primary Down, True Cache Still Serving
+## Task 5: Verify Availability: True Cache Can Continue Serving Eligible Reads During Primary Downtime
 
-1. Select **Start Parallel Workload**. This starts read activity on both Primary and True Cache.
+1. Select **Start Parallel Workload**. This starts separate read and write activity for the configured duration and stops automatically.
 2. Select **Kill Primary DB**.
 3. Confirm that Primary changes to an unavailable state while True Cache remains healthy.
 4. Review the True Cache read TPS and the logical-connection status in the right-hand panel.
@@ -138,7 +138,7 @@ The read comparison is intentionally shown separately from the write activity. P
 6. Wait for Primary and True Cache to return to **HEALTHY**.
 7. Select **Next step**.
 
-True Cache is a read-only replica. This availability scenario models a read-heavy application during a Primary outage: while True Cache remains available and has the required data, it can continue serving eligible read-only requests, while write operations and changes still require the Primary database. The workload stops automatically after the selected duration, and Primary is restored before the next step.
+True Cache is a read-only replica. While the True Cache container and read service remain available and replicated data has been applied, it can continue serving eligible read-only requests during Primary downtime. Write operations and changes still require the Primary database. Primary is restored before the next step.
 
 ![FastLab failover demo](images/fastlab-failover-demo.png " ")
 
@@ -157,7 +157,7 @@ True Cache is a read-only replica. This availability scenario models a read-heav
 6. Read **Vector distance** as a similarity score: a smaller cosine distance means the payment profiles point in a more similar direction. The distance is not a currency amount or a percentage.
 7. Try another reference payment or investigation and compare how the candidate filter changes the results.
 
-This step connects the existing payment workflow to Oracle AI Vector Search. This lab uses a deterministic 16-dimensional feature vector derived from payment attributes, including amount, account behavior, country, and transaction time. It is a demonstrative similarity representation, not an LLM-generated text embedding. True Cache keeps frequently accessed vector data available in memory, allowing eligible semantic retrieval requests to be served close to the application while the Primary database remains the system of record.
+This step connects the existing payment workflow to Oracle AI Vector Search. This lab uses a deterministic 16-dimensional feature vector derived from payment attributes, including amount, account behavior, country, and transaction time. It is a demonstrative similarity representation. Oracle True Cache can accelerate and offload the database read path for eligible read-only vector retrieval while the Primary database remains the system of record.
 
 ![FastLab semantic retrieval using vector search](images/fastlab-vector-search.png " ")
 

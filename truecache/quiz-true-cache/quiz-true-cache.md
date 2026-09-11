@@ -38,10 +38,10 @@ Q: Why must Lab 1 confirm that the primary database, True Cache, and client cont
 > The workshop depends on all three services—database, cache, and client—to continue, so verifying they run avoids cascading failures in later tasks.
 
 Q: After loading data in Lab 2, why is DBMS_CACHEUTIL.TRUE_CACHE_KEEP invoked for the ACCOUNTS table?
-* It pins critical tables in the True Cache buffer cache so read-only queries stay cached for consistent performance tests.
+* It keeps critical tables in the True Cache cache pool so read-only queries remain available for consistent performance tests.
 - It truncates the table so True Cache can reload data from Object Storage.
 - It grants extra privileges to the transactions user before running JDBC workloads.
-> Keeping the table in the True Cache buffer ensures the workload hits cached data, demonstrating the cache benefits without eviction noise.
+> Keeping the selected table and indexes in the True Cache keep list reduces eviction during the demonstration, so the read-only workload can exercise a warmed cached-data path.
 
 Q: What is the purpose of the warm-up phase in TransactionsApp.sh before the workload switches to True Cache?
 * It identifies key tables and populates True Cache so the comparison reflects steady-state cached reads.
@@ -49,7 +49,7 @@ Q: What is the purpose of the warm-up phase in TransactionsApp.sh before the wor
 - It disables True Cache connections so only the primary handles reads.
 > Preloading True Cache primes the cache with relevant objects, making the subsequent True Cache run a fair measure of cached performance.
 
-Q: How does the Oracle 23ai JDBC driver manage connections when the application targets True Cache?
+Q: How does the Oracle JDBC driver manage connections when the application targets True Cache?
 * The application uses one logical service name. It marks eligible work read-only, and the driver routes that work to True Cache while retaining the Primary connection for read-write work.
 - The driver opens separate JDBC URLs for read and write operations that the application must manage manually.
 - The driver mirrors every statement to both databases to keep them synchronized without application input.

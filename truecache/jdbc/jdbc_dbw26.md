@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This lab uses one logical JDBC connection for Primary and True Cache. Read-only work can be routed to True Cache, while read-write work remains on Primary. The lab compares read performance, observes replication statistics while Primary receives updates, and verifies that True Cache continues serving reads while Primary is stopped.
+This lab uses one logical JDBC connection for Primary and True Cache. When True Cache is configured and the work is marked read-only, eligible read-only work can be routed to True Cache, while read-write work remains on Primary. The lab compares read performance, observes replication statistics while Primary receives updates, and verifies that True Cache can continue serving eligible reads while Primary is stopped.
 
 Estimated Time: 30 minutes.
 
@@ -30,6 +30,44 @@ cd /stage/clientapp
 
 Keep this application shell open throughout the remainder of this lab.
 
+If `prod` or `truedb` was restarted after Initialize Environment, verify the database services before running the application. The proxy normally performs this reconciliation automatically; use these idempotent commands only when the service query is empty.
+
+Primary service recovery from a separate host terminal:
+
+~~~text
+<copy>
+sudo podman exec -it prod /bin/bash
+export ORACLE_SID=ORCLCDB
+sqlplus / as sysdba
+alter session set container=ORCLPDB1;
+begin
+  dbms_service.start_service('SALES1');
+end;
+/
+select name, network_name from v$services where upper(name) = 'SALES1';
+exit
+exit
+</copy>
+~~~
+
+True Cache service recovery, if needed:
+
+~~~text
+<copy>
+sudo podman exec -it truedb /bin/bash
+export ORACLE_SID=TRUEDB
+sqlplus / as sysdba
+alter session set container=ORCLPDB1;
+begin
+  dbms_service.start_service('SALES1_TC');
+end;
+/
+select name, network_name from v$services where upper(name) = 'SALES1_TC';
+exit
+exit
+</copy>
+~~~
+
 ## Task 1: Validate JDBC Routing
 
 Run the supplied BasicApp from the application container:
@@ -42,11 +80,11 @@ cd /stage/clientapp
 </copy>
 ~~~
 
-The result identifies the database role used by the read-only operation. The application uses one logical connection; the JDBC driver routes read-only queries to True Cache and sends read-write operations to Primary.
+The result identifies the database role used by the read-only operation. When True Cache is configured and the work is marked read-only, the JDBC driver can route eligible read-only queries to True Cache; read-write operations remain on the Primary database.
 
 ## Task 2: Compare Primary and True Cache Performance and Lag
 
-In a separate host terminal, enter the Primary container once and start three update-only workers. Keep this shell open until you run the cleanup command below:
+In a separate host terminal, enter the Primary container once and start three bounded, update-only workers. Each worker performs a fixed number of updates and exits automatically; keep this shell open until you run the cleanup command below in case you interrupt the workers:
 
 ~~~text
 <copy>
@@ -55,8 +93,10 @@ export ORACLE_SID=ORCLCDB
 : > /tmp/tcwrite.pids
 for worker in 1 2 3; do
   (
-    while true; do
-      printf '%s\n' "alter session set container=ORCLPDB1;" "update transactions.accounts set balance=balance+1,last_modified_utc=systimestamp where account_id between 1 and 25000;" "commit;" "exit" | sqlplus -s / as sysdba >/dev/null 2>&1
+    for iteration in $(seq 1 20); do
+      start_id=$((1 + (worker - 1) * 2500))
+      end_id=$((worker * 2500))
+      printf '%s\n' "alter session set container=ORCLPDB1;" "update transactions.accounts set balance=balance+1,last_modified_utc=systimestamp where account_id between ${start_id} and ${end_id};" "commit;" "exit" | sqlplus -s / as sysdba >/dev/null 2>&1
       sleep 0.15
     done
   ) &
@@ -66,14 +106,14 @@ cat /tmp/tcwrite.pids
 </copy>
 ~~~
 
-These workers update existing `ACCOUNTS` rows. They do not add rows to the dataset.
+These workers update existing `ACCOUNTS` rows for 20 iterations. They do not add rows to the dataset and stop automatically when the fixed iteration count completes.
 
 From the application-container shell, run the Primary read baseline. This is the reference read-throughput measurement for the same workload:
 
 ~~~text
 <copy>
 cd /stage/clientapp
-URL=172.20.1.2:1521/sales1 THREADS=10 DURATION=30 METRICS_PORT=9092 ./TransactionsApp.sh primary
+READ_ONLY_WORKLOAD=true DIRECT_READ_ONLY=true DISABLE_TRUECACHE_PROPERTY=true URL=172.20.1.2:1521/sales1 THREADS=10 DURATION=30 METRICS_PORT=9092 ./TransactionsApp.sh primary
 </copy>
 ~~~
 
@@ -90,7 +130,7 @@ Run both read paths in parallel:
 ~~~text
 <copy>
 pkill -f '[T]ransactions_TrueCache' || true
-URL=172.20.1.2:1521/sales1 THREADS=10 DURATION=60 METRICS_PORT=9092 ./TransactionsApp.sh primary >/tmp/primary-read.log 2>&1 &
+READ_ONLY_WORKLOAD=true DIRECT_READ_ONLY=true DISABLE_TRUECACHE_PROPERTY=true URL=172.20.1.2:1521/sales1 THREADS=10 DURATION=60 METRICS_PORT=9092 ./TransactionsApp.sh primary >/tmp/primary-read.log 2>&1 &
 PRIMARY_PID=$!
 sleep 2
 READ_ONLY_WORKLOAD=true DIRECT_READ_ONLY=true DISABLE_TRUECACHE_PROPERTY=true ALLOW_DIRECT_FALLBACK=true DIRECT_FALLBACK_URL=172.20.1.98:1521/SALES1_TC URL=172.20.1.98:1521/SALES1_TC THREADS=10 DURATION=60 METRICS_PORT=9093 ./TransactionsApp.sh truecache >/tmp/truecache-read.log 2>&1 &
@@ -128,11 +168,13 @@ exit
 </copy>
 ~~~
 
+If you interrupted the worker command, return to the Primary-container shell and run the cleanup command before starting the next task.
+
 The workload output reports read TPS and the last read node. The Primary run should identify Primary as its read node, and the direct True Cache run should identify True Cache. The diagnostics show the replication and cache values used to interpret the comparison.
 
 ![Full LiveLab performance and lag](images/full-livelab-performance.png " ")
 
-## Task 3: Verify Availability: True Cache Continues to Serve During Primary Downtime
+## Task 3: Verify Availability: True Cache Can Continue Serving Eligible Reads During Primary Downtime
 
 Use the application-container shell to start both read paths:
 
@@ -140,7 +182,7 @@ Use the application-container shell to start both read paths:
 <copy>
 cd /stage/clientapp
 pkill -f '[T]ransactions_TrueCache' || true
-URL=172.20.1.2:1521/sales1 THREADS=10 DURATION=120 METRICS_PORT=9092 ./TransactionsApp.sh primary >/tmp/availability-primary.log 2>&1 &
+READ_ONLY_WORKLOAD=true DIRECT_READ_ONLY=true DISABLE_TRUECACHE_PROPERTY=true URL=172.20.1.2:1521/sales1 THREADS=10 DURATION=120 METRICS_PORT=9092 ./TransactionsApp.sh primary >/tmp/availability-primary.log 2>&1 &
 PRIMARY_PID=$!
 sleep 2
 READ_ONLY_WORKLOAD=true DIRECT_READ_ONLY=true DISABLE_TRUECACHE_PROPERTY=true ALLOW_DIRECT_FALLBACK=true DIRECT_FALLBACK_URL=172.20.1.98:1521/SALES1_TC URL=172.20.1.98:1521/SALES1_TC THREADS=10 DURATION=120 METRICS_PORT=9093 ./TransactionsApp.sh truecache >/tmp/availability-truecache.log 2>&1 &
@@ -241,7 +283,7 @@ exit
 </copy>
 ~~~
 
-This completes the availability test. The True Cache process should report reads while Primary was stopped, and the Primary process should resume after Primary is restored.
+While the True Cache container and read service remain available and replicated data has been applied, the True Cache process should report eligible reads while Primary is stopped. The Primary process should resume after Primary is restored.
 
 ![Full LiveLab availability test](images/full-livelab-availability.png " ")
 

@@ -51,7 +51,7 @@ This lab assumes you have:
 
 ## Task 2: Apply KEEP and Verify the Keep List
 
-1. Apply KEEP to the `TRANSACTIONS.ACCOUNTS` table.
+1. Apply KEEP to the selected `TRANSACTIONS` tables and indexes.
 
     ```
     <copy>

@@ -13,7 +13,7 @@ Estimated Time: 15 minutes.
 ## Objectives
 
 - Create a native Oracle vector table in the TRANSACTIONS schema.
-- Generate 16-dimensional payment feature vectors from existing payment attributes.
+- Create deterministic 16-dimensional payment feature vectors from existing payment attributes.
 - Create a cosine IVF vector index.
 - Run similar-payment, account-behavior, and cross-border queries through True Cache.
 - Explain why each query returns the five nearest rows under its filter and how to interpret cosine distance.
@@ -43,7 +43,7 @@ fetch first 10 rows only;
 </copy>
 ~~~
 
-Create the native vector table. The PL/SQL block leaves an existing table in place and creates it when the lab is initialized from an empty schema:
+Create the native vector table. The block creates `PAYMENT_VECTORS` only when it does not already exist. If the table exists, verify that its columns and vector dimension match the definition below before continuing:
 
 ~~~text
 <copy>
@@ -57,7 +57,7 @@ end;
 </copy>
 ~~~
 
-Generate the 16-dimensional payment feature vector from the existing payment fields. The first dimensions encode normalized amount, account, country, and transaction-time features. The remaining deterministic values help distinguish otherwise similar rows. These values are a demonstration feature vector, not a model-generated semantic embedding:
+Create the 16-dimensional payment feature vector from the existing payment fields. The first dimensions encode normalized amount, account, country, and transaction-time features. The remaining deterministic values help distinguish otherwise similar rows. These values are a demonstration feature vector derived from transaction attributes:
 
 ~~~text
 <copy>

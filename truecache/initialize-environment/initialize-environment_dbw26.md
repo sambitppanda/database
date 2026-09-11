@@ -63,6 +63,8 @@ This lab assumes you have:
 
 6. Wait until `prod` and `truedb` report **healthy**. The `appclient` container may show only its running status because it does not expose a database health check.
 
+The LiveLab proxy normally starts the database services after the containers become healthy. If a database container was restarted and the service query in Task 2 does not list `SALES1` or `SALES1_TC`, run the idempotent service-start commands in Task 2 before continuing.
+
 ### Recover stopped or unhealthy containers
 
 If `prod`, `truedb`, or `appclient` is stopped, start the pre-provisioned containers and check their status again:
@@ -76,9 +78,9 @@ If `prod`, `truedb`, or `appclient` is stopped, start the pre-provisioned contai
 
 It may take several minutes for the Oracle database containers to become healthy after a restart. Do not continue until `prod` and `truedb` report **healthy** and all three containers are running. If a named container is missing from `sudo podman ps -a`, the instance was not provisioned with the required lab environment and must be restored by the lab administrator.
 
-## Task 2: Validate True Cache Services from the Terminal
+## Task 2: Start and Validate True Cache Services from the Terminal
 
-1. Confirm the Primary service.
+1. Start and confirm the Primary service. The `start_service` call is safe to repeat after a container restart.
 
     ```
     <copy>
@@ -88,6 +90,10 @@ It may take several minutes for the Oracle database containers to become healthy
     set pages 100 lines 180
     select database_role, open_mode from v$database;
     alter session set container=ORCLPDB1;
+    begin
+      dbms_service.start_service('SALES1');
+    end;
+    /
     select name, network_name from v$services where lower(name) like 'sales1%' order by name;
     exit
     exit
@@ -96,7 +102,7 @@ It may take several minutes for the Oracle database containers to become healthy
 
     Expected values are `PRIMARY` with a read-write open mode for the Primary database. The service query should list the `SALES1` service in the `ORCLPDB1` PDB.
 
-2. Confirm the True Cache service and database role.
+2. Start and confirm the True Cache service and database role. The `start_service` call is safe to repeat after a container restart.
 
     ```
     <copy>
@@ -106,6 +112,10 @@ It may take several minutes for the Oracle database containers to become healthy
     set pages 100 lines 180
     select database_role, open_mode from v$database;
     alter session set container=ORCLPDB1;
+    begin
+      dbms_service.start_service('SALES1_TC');
+    end;
+    /
     select name, network_name from v$services where lower(name) like 'sales1%' order by name;
     exit
     exit

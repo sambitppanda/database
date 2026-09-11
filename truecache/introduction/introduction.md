@@ -6,7 +6,7 @@ Run this hands-on workshop to learn how Oracle True Cache improves scalability b
 
 ### About Oracle True Cache
 
-Oracle Database True Cache is an in-memory, consistent, and automatically managed SQL and key-value cache. It is conceptually similar to a diskless Active Data Guard replica, optimized to serve eligible read workloads. Large-scale web applications can experience performance issues when the primary database becomes a bottleneck. True Cache improves scalability by offloading read queries and reducing the number of requests and connections sent to the primary database.
+Oracle Database True Cache is a consistent, automatically managed, read-only replica designed to serve eligible SQL and key-value read workloads. It is conceptually similar to a diskless Active Data Guard replica. Large-scale web applications can experience performance issues when the primary database becomes a bottleneck. True Cache improves scalability by offloading read queries and reducing the number of requests and connections sent to the primary database.
 
 ### Why Use True Cache
 
@@ -42,7 +42,7 @@ The DBW26 workshop provides two ways to learn the same True Cache workflow:
 - **FastLab:** use the visual command center for a quick guided demonstration.
 - **Full LiveLab:** use the terminal to run the database, Java, and Podman commands directly.
 
-The workflow covers environment validation, JDBC routing, cache KEEP and warmup, Primary versus True Cache read performance, availability while Primary is stopped, and semantic payment search with Oracle AI Vector Search. The Full LiveLab path starts with a hidden password prompt and terminal commands that require sudo access; later steps continue in the same sessions.
+The workflow covers environment validation, JDBC routing, cache KEEP and warmup, Primary versus True Cache read performance, availability while Primary is stopped, and semantic payment search with Oracle AI Vector Search. The Full LiveLab path uses a hidden password prompt and terminal commands that require sudo access. Follow each lab's container-session instructions.
 
 ## Learn More
 - [True Cache documentation](https://docs.oracle.com/en/database/oracle/oracle-database/23/odbtc/overview-oracle-true-cache.html)
