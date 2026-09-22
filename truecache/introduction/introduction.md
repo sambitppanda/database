@@ -42,12 +42,12 @@ The DBW26 workshop provides two ways to learn the same True Cache workflow:
 - **FastLab:** use the visual command center for a quick guided demonstration.
 - **Full LiveLab:** use the terminal to run the database, Java, and Podman commands directly.
 
-The workflow covers environment validation, JDBC routing, cache KEEP and warmup, Primary versus True Cache read performance, availability while Primary is stopped, and semantic payment search with Oracle AI Vector Search. The Full LiveLab path uses a hidden password prompt and terminal commands that require sudo access. Follow each lab's container-session instructions.
+The workflow covers environment validation, JDBC routing, cache KEEP and warmup, Primary versus True Cache read performance, availability while Primary is stopped, and semantic payment search with Oracle AI Vector Search. The Full LiveLab path uses terminal commands that require sudo access. The stack writes the generated Transactions password to `/home/opc/.truecache_lab_env`; the JDBC and warmup labs pass that credential into the application container without displaying it. Follow each lab's container-session instructions.
 
 ## Learn More
 - [True Cache documentation](https://docs.oracle.com/en/database/oracle/oracle-database/23/odbtc/overview-oracle-true-cache.html)
 
 ## Acknowledgements
 * **Authors** - Sambit Panda, Consulting Member of Technical Staff, Oracle Database Product Management
-* **Contributors** - Pankaj Chandiramani, Shefali Bhargava, Jyoti Verma, Nithin Thekkupadam Narayanan
+* **Contributors** - Pankaj Chandiramani, Shefali Bhargava, Jyoti Verma, Nithin Thekkupadam Narayanan, Sarvesh Gupta
 * **Last Updated By/Date** - Sambit Panda, Consulting Member of Technical Staff, Sep 2026

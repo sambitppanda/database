@@ -39,7 +39,7 @@
       "type": "sandbox"
     },
     {
-      "title": "Lab 4: Semantic Retrieval Using Vector Search and True Cache",
+      "title": "Lab 4: New Feature - Semantic Cache with Vector Search",
       "description": "Use native Oracle AI Vector Search with the existing transaction payment data",
       "filename": "../../vector-search/vector-search_dbw26.md",
       "type": "sandbox"

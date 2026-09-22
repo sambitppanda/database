@@ -58,5 +58,5 @@ Q: How does the Oracle JDBC driver manage connections when the application targe
 ## Acknowledgements
 
 * **Authors** - Sambit Panda, Consulting Member of Technical Staff, Oracle Database Product Management
-* **Contributors** - Pankaj Chandiramani, Shefali Bhargava, Jyoti Verma, Nithin Thekkupadam Narayanan
+* **Contributors** - Pankaj Chandiramani, Shefali Bhargava, Jyoti Verma, Nithin Thekkupadam Narayanan, Sarvesh Gupta
 * **Last Updated By/Date** - Sambit Panda, Consulting Member of Technical Staff, Sep 2026

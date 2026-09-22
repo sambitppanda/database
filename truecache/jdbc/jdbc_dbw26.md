@@ -2,28 +2,35 @@
 
 ## Introduction
 
-This lab uses one logical JDBC connection for Primary and True Cache. When True Cache is configured and the work is marked read-only, eligible read-only work can be routed to True Cache, while read-write work remains on Primary. The lab compares read performance, observes replication statistics while Primary receives updates, and verifies that True Cache can continue serving eligible reads while Primary is stopped.
+This lab uses one logical JDBC connection for Primary and True Cache. When True Cache is configured and the work is marked read-only, eligible read-only work can be routed to True Cache, while read-write work remains on Primary. The lab compares read latency, with TPS as a supporting metric, observes replication statistics while Primary receives updates, and verifies that True Cache can continue serving eligible reads while Primary is stopped.
 
 Estimated Time: 30 minutes.
 
-The command-line path uses one application-container shell and one database-container shell at a time. After entering a container, run the following commands directly in that shell. Do not start another container shell for each command.
+Use one shell for each container session. After entering a container, run the commands for that section directly in that shell. Host-level start and stop commands are labeled separately.
 
 ## Objectives
 
 - Validate JDBC read routing.
-- Compare Primary and True Cache read throughput, measured as transactions per second (TPS), and latency.
+- Compare Primary and True Cache read latency, with transactions per second (TPS) as a supporting throughput metric.
 - Observe transport lag, apply lag, cache hit ratios, and fetch latency.
 - Verify True Cache availability while Primary is stopped.
-- Continue to the separate Semantic Retrieval Using Vector Search and True Cache lab.
+- Continue to the separate New Feature: Semantic Cache with Vector Search lab.
 
 ## Application Container Session
 
-Open the application container once. Enter the password through the hidden prompt so that it is not displayed on screen:
+From the desktop Terminal, load the lab environment and open the application container once. The environment file contains the generated Transactions password used by the lab services. Do not use the VNC password or a sample password.
 
 ~~~text
 <copy>
-read -rsp 'Transactions password: ' DB_PASS; echo
+source /home/opc/.truecache_lab_env
 sudo podman exec -e DB_PASS="$DB_PASS" -it appclient /bin/bash
+</copy>
+~~~
+
+At the `appclient` container prompt, move to the client application directory:
+
+~~~text
+<copy>
 cd /stage/clientapp
 </copy>
 ~~~
@@ -32,11 +39,18 @@ Keep this application shell open throughout the remainder of this lab.
 
 If `prod` or `truedb` was restarted after Initialize Environment, verify the database services before running the application. The proxy normally performs this reconciliation automatically; use these idempotent commands only when the service query is empty.
 
-Primary service recovery from a separate host terminal:
+Primary service recovery from the host terminal, only if the service query is empty:
 
 ~~~text
 <copy>
 sudo podman exec -it prod /bin/bash
+</copy>
+~~~
+
+At the `prod` container prompt, run the following commands:
+
+~~~text
+<copy>
 export ORACLE_SID=ORCLCDB
 sqlplus / as sysdba
 alter session set container=ORCLPDB1;
@@ -50,11 +64,18 @@ exit
 </copy>
 ~~~
 
-True Cache service recovery, if needed:
+True Cache service recovery from the host terminal, only if the service query is empty:
 
 ~~~text
 <copy>
 sudo podman exec -it truedb /bin/bash
+</copy>
+~~~
+
+At the `truedb` container prompt, run the following commands:
+
+~~~text
+<copy>
 export ORACLE_SID=TRUEDB
 sqlplus / as sysdba
 alter session set container=ORCLPDB1;
@@ -67,6 +88,8 @@ exit
 exit
 </copy>
 ~~~
+
+If either service-start block reports `ORA-44305`, that service is already running; continue with the service query.
 
 ## Task 1: Validate JDBC Routing
 
@@ -84,19 +107,35 @@ The result identifies the database role used by the read-only operation. When Tr
 
 ## Task 2: Compare Primary and True Cache Performance and Lag
 
-In a separate host terminal, enter the Primary container once and start three bounded, update-only workers. Each worker performs a fixed number of updates and exits automatically; keep this shell open until you run the cleanup command below in case you interrupt the workers:
+In a separate desktop Terminal window, open the Primary container once and start three bounded, update-only workers. Each worker performs a fixed number of updates and exits automatically. Keep this container shell open until you run the cleanup command below in case you interrupt the workers:
 
 ~~~text
 <copy>
 sudo podman exec -it prod /bin/bash
+</copy>
+~~~
+
+At the `prod` container prompt, run the worker commands:
+
+~~~text
+<copy>
 export ORACLE_SID=ORCLCDB
 : > /tmp/tcwrite.pids
+
+update_accounts() {
+  printf '%s\n' \
+    "alter session set container=ORCLPDB1;" \
+    "update transactions.accounts set balance=balance+1,last_modified_utc=systimestamp where account_id between $1 and $2;" \
+    "commit;" \
+    "exit" | sqlplus -s / as sysdba >/dev/null 2>&1
+}
+
 for worker in 1 2 3; do
   (
+    start_id=$((1 + (worker - 1) * 2500))
+    end_id=$((worker * 2500))
     for iteration in $(seq 1 20); do
-      start_id=$((1 + (worker - 1) * 2500))
-      end_id=$((worker * 2500))
-      printf '%s\n' "alter session set container=ORCLPDB1;" "update transactions.accounts set balance=balance+1,last_modified_utc=systimestamp where account_id between ${start_id} and ${end_id};" "commit;" "exit" | sqlplus -s / as sysdba >/dev/null 2>&1
+      update_accounts "$start_id" "$end_id"
       sleep 0.15
     done
   ) &
@@ -108,7 +147,7 @@ cat /tmp/tcwrite.pids
 
 These workers update existing `ACCOUNTS` rows for 20 iterations. They do not add rows to the dataset and stop automatically when the fixed iteration count completes.
 
-From the application-container shell, run the Primary read baseline. This is the reference read-throughput measurement for the same workload:
+From the application-container shell, run the Primary read baseline. This is the reference read-latency measurement for the same workload; TPS is reported as a supporting metric:
 
 ~~~text
 <copy>
@@ -140,11 +179,18 @@ grep -E 'ReadTPS|Read TPS|readNode' /tmp/primary-read.log /tmp/truecache-read.lo
 </copy>
 ~~~
 
-While the comparison runs, open another host terminal, enter the True Cache container once, and run the following diagnostics. They capture replication lag, cache-hit ratios, and fetch latency while the read workload is active:
+While the comparison runs, open another desktop Terminal window and enter the True Cache container once. Then run the following diagnostics. They capture replication lag, cache-hit ratios, and fetch latency while the read workload is active:
 
 ~~~text
 <copy>
 sudo podman exec -it truedb /bin/bash
+</copy>
+~~~
+
+At the `truedb` container prompt, run the diagnostics:
+
+~~~text
+<copy>
 export ORACLE_SID=TRUEDB
 sqlplus / as sysdba
 alter session set container=ORCLPDB1;
@@ -170,7 +216,7 @@ exit
 
 If you interrupted the worker command, return to the Primary-container shell and run the cleanup command before starting the next task.
 
-The workload output reports read TPS and the last read node. The Primary run should identify Primary as its read node, and the direct True Cache run should identify True Cache. The diagnostics show the replication and cache values used to interpret the comparison.
+The workload output reports read latency, read TPS, and the last read node. The Primary run should identify Primary as its read node, and the direct True Cache run should identify True Cache. The diagnostics show the replication and cache values used to interpret the comparison.
 
 ![Full LiveLab performance and lag](images/full-livelab-performance.png " ")
 
@@ -191,7 +237,7 @@ pgrep -af '[T]ransactions_TrueCache'
 </copy>
 ~~~
 
-Use the host terminal to stop Primary:
+From the host terminal, stop Primary:
 
 ~~~text
 <copy>
@@ -200,11 +246,18 @@ sudo podman ps --format 'table {{.Names}}\t{{.Status}}'
 </copy>
 ~~~
 
-Connect to True Cache and verify its role and read service:
+From the host terminal, open the True Cache container once:
 
 ~~~text
 <copy>
 sudo podman exec -it truedb /bin/bash
+</copy>
+~~~
+
+At the `truedb` container prompt, verify its role and read service:
+
+~~~text
+<copy>
 export ORACLE_SID=TRUEDB
 sqlplus / as sysdba
 set pages 100 lines 180
@@ -247,11 +300,18 @@ sudo podman ps --format 'table {{.Names}}\t{{.Status}}'
 
 Wait for `prod` to report `running|healthy` before continuing. The database may need several minutes to complete startup after the container is restored.
 
-Connect to the Primary and verify its role and service:
+From the host terminal, open the Primary container once:
 
 ~~~text
 <copy>
 sudo podman exec -it prod /bin/bash
+</copy>
+~~~
+
+At the `prod` container prompt, verify its role and service:
+
+~~~text
+<copy>
 export ORACLE_SID=ORCLCDB
 sqlplus / as sysdba
 set pages 100 lines 180
@@ -289,7 +349,7 @@ While the True Cache container and read service remain available and replicated 
 
 ## Next Lab
 
-Continue to [Semantic Retrieval Using Vector Search and True Cache](../vector-search/vector-search_dbw26.md) for the native vector table, deterministic payment feature vectors, vector index, and payment-investigation queries.
+Continue to [New Feature: Semantic Cache with Vector Search](../vector-search/vector-search_dbw26.md) for the native vector table, deterministic payment feature vectors, vector index, and payment-investigation queries.
 
 ## Learn More
 
@@ -298,5 +358,5 @@ Continue to [Semantic Retrieval Using Vector Search and True Cache](../vector-se
 ## Acknowledgements
 
 * **Authors** - Sambit Panda, Consulting Member of Technical Staff, Oracle Database Product Management
-* **Contributors** - Pankaj Chandiramani, Shefali Bhargava, Jyoti Verma, Nithin Thekkupadam Narayanan
+* **Contributors** - Pankaj Chandiramani, Shefali Bhargava, Jyoti Verma, Nithin Thekkupadam Narayanan, Sarvesh Gupta
 * **Last Updated By/Date** - Sambit Panda, Consulting Member of Technical Staff, Sep 2026

@@ -11,7 +11,6 @@ The DBW26 environment is already provisioned. You do not need to create the tran
 <if type="nonsandbox">
 Watch the video for a quick walk-through of Lab 4: Prepare and Warm True Cache.
 [Lab 4](videohub:1_mz228rvo)
-[Lab 4](videohub:1_yayzolzj)
 </if>
 
 ### Objectives
@@ -32,11 +31,18 @@ This lab assumes you have:
 
 ![Full LiveLab routing and cache warmup](images/full-livelab-routing-and-warmup.png " ")
 
-1. Validate that the transaction tables already exist in the Primary database.
+1. From the desktop Terminal, open the Primary database container once.
 
     ```
     <copy>
     sudo podman exec -it prod /bin/bash
+    </copy>
+    ```
+
+    At the `prod` container prompt, connect to the Primary database as `SYSDBA` and review the preloaded tables:
+
+    ```
+    <copy>
     export ORACLE_SID=ORCLCDB
     sqlplus / as sysdba
     alter session set container=ORCLPDB1;
@@ -47,15 +53,24 @@ This lab assumes you have:
     </copy>
     ```
 
-2. The output should include owner `TRANSACTIONS` and tables such as `ACCOUNTS`, `PAYMENTS`, and `PAYMENT_VECTORS`. The exact row order can vary.
+    Leave the container with `exit` after completing the SQL query.
+
+2. The output should include owner `TRANSACTIONS` and tables such as `ACCOUNTS` and `PAYMENTS`. The pre-provisioned `PAYMENT_VECTORS` sample is reserved for the later vector-search lab and is not part of this KEEP/warmup task. The exact row order can vary.
 
 ## Task 2: Apply KEEP and Verify the Keep List
 
-1. Apply KEEP to the selected `TRANSACTIONS` tables and indexes.
+1. From the host terminal, open the True Cache container once.
 
     ```
     <copy>
     sudo podman exec -it truedb /bin/bash
+    </copy>
+    ```
+
+    At the `truedb` container prompt, connect to True Cache as `SYSDBA` and apply KEEP to the selected `TRANSACTIONS` tables and indexes.
+
+    ```
+    <copy>
     export ORACLE_SID=TRUEDB
     sqlplus / as sysdba
     alter session set container=ORCLPDB1;
@@ -67,32 +82,38 @@ This lab assumes you have:
     set pages 100 lines 220
     select owner, object_name, object_type from dba_objects where data_object_id in (select data_object_id from v$true_cache_keep) order by owner, object_type, object_name;
     exit
-    exit
     </copy>
     ```
+
+    Keep the `truedb` container shell open for the statistics query in Task 3.
 
 2. Confirm that the kept objects are listed. The result should include `ACCOUNTS`, `ACCOUNTS_PK`, `PAYMENTS`, `PAYMENTS_PK`, and `PAYMENTS_UK` under owner `TRANSACTIONS`. `PAYMENT_VECTORS` is intentionally handled in the vector-search lab.
 
 ## Task 3: Warm True Cache
 
-1. Run the warmup application from the app container.
+1. From a second desktop Terminal window, load the lab environment and open the application container once. The environment file contains the generated Transactions password used by the lab services. Do not use the VNC password or a sample password.
 
     ```
     <copy>
-    read -rsp 'Transactions password: ' DB_PASS; echo
+    source /home/opc/.truecache_lab_env
     sudo podman exec -e DB_PASS="$DB_PASS" -it appclient /bin/bash
+    </copy>
+    ```
+
+    At the `appclient` container prompt, run the warmup application:
+
+    ```
+    <copy>
     cd /stage/clientapp
     USE_TC_CONN=Y METRICS_PORT=9091 ./TransactionsApp.sh warmup
     exit
     </copy>
     ```
 
-2. Check True Cache warmup and hit-ratio statistics.
+2. Return to the open `truedb` container shell, start SQL*Plus, and check the warmup and hit-ratio statistics.
 
     ```
     <copy>
-    sudo podman exec -it truedb /bin/bash
-    export ORACLE_SID=TRUEDB
     sqlplus / as sysdba
     alter session set container=ORCLPDB1;
     set pages 100 lines 220
@@ -111,5 +132,5 @@ Continue to the next lab.
 
 ## Acknowledgements
 * **Authors** - Sambit Panda, Consulting Member of Technical Staff, Oracle Database Product Management
-* **Contributors** - Pankaj Chandiramani, Shefali Bhargava, Jyoti Verma, Nithin Thekkupadam Narayanan
+* **Contributors** - Pankaj Chandiramani, Shefali Bhargava, Jyoti Verma, Nithin Thekkupadam Narayanan, Sarvesh Gupta
 * **Last Updated By/Date** - Sambit Panda, Consulting Member of Technical Staff, Sep 2026

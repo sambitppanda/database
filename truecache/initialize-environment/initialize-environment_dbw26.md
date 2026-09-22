@@ -32,11 +32,13 @@ This lab assumes you have:
     - Oracle True Cache container
     - Client app container
 
+The workshop guide and application may open side-by-side by design. If you need more workspace, open the noVNC control bar on the left and select **Fullscreen**. You can maximize an individual browser window from its title bar when working with only that window.
+
 2. Select Activities in the upper-left corner, then select the Terminal icon next to Chrome.
 
     ![activities_terminal_icon](images/activities_terminal_icon.png " ")
 
-3. List the Podman containers.
+3. From the desktop Terminal, list the Podman containers.
 
         ```
         <copy>
@@ -45,7 +47,7 @@ This lab assumes you have:
         ```
     ![podman containers](https://oracle-livelabs.github.io/database/truecache/initialize-environment/images/truecache-podman.png " ")
 
-4. If a container is not running, restart it using the following commands.
+4. If a container is not running, start the pre-provisioned containers from the host terminal.
 
         ```
         <copy>
@@ -53,7 +55,7 @@ This lab assumes you have:
         </copy>
         ```
 
-5. Verify that all containers are running.
+5. From the host terminal, verify that all containers are running.
 
         ```
         <copy>
@@ -69,22 +71,29 @@ The LiveLab proxy normally starts the database services after the containers bec
 
 If `prod`, `truedb`, or `appclient` is stopped, start the pre-provisioned containers and check their status again:
 
-        ```
-        <copy>
-        sudo podman start prod truedb appclient
-        sudo podman ps --format 'table {{.Names}}\t{{.Status}}'
-        </copy>
-        ```
+    ```
+    <copy>
+    sudo podman start prod truedb appclient
+    sudo podman ps --format 'table {{.Names}}\t{{.Status}}'
+    </copy>
+    ```
 
 It may take several minutes for the Oracle database containers to become healthy after a restart. Do not continue until `prod` and `truedb` report **healthy** and all three containers are running. If a named container is missing from `sudo podman ps -a`, the instance was not provisioned with the required lab environment and must be restored by the lab administrator.
 
 ## Task 2: Start and Validate True Cache Services from the Terminal
 
-1. Start and confirm the Primary service. The `start_service` call is safe to repeat after a container restart.
+1. From the host terminal, open the Primary database container once.
 
     ```
     <copy>
     sudo podman exec -it prod /bin/bash
+    </copy>
+    ```
+
+    At the `prod` container prompt, start SQL*Plus and run the following commands. The `start_service` call is safe to repeat after a container restart.
+
+    ```
+    <copy>
     export ORACLE_SID=ORCLCDB
     sqlplus / as sysdba
     set pages 100 lines 180
@@ -94,19 +103,28 @@ It may take several minutes for the Oracle database containers to become healthy
       dbms_service.start_service('SALES1');
     end;
     /
-    select name, network_name from v$services where lower(name) like 'sales1%' order by name;
+    select name, network_name from v$services where upper(name) = 'SALES1';
     exit
     exit
     </copy>
     ```
 
+    Leave the container with `exit` after completing the SQL commands.
+
     Expected values are `PRIMARY` with a read-write open mode for the Primary database. The service query should list the `SALES1` service in the `ORCLPDB1` PDB.
 
-2. Start and confirm the True Cache service and database role. The `start_service` call is safe to repeat after a container restart.
+2. At the host terminal, open the True Cache container once.
 
     ```
     <copy>
     sudo podman exec -it truedb /bin/bash
+    </copy>
+    ```
+
+    At the `truedb` container prompt, start SQL*Plus and run the following commands. The `start_service` call is safe to repeat after a container restart.
+
+    ```
+    <copy>
     export ORACLE_SID=TRUEDB
     sqlplus / as sysdba
     set pages 100 lines 180
@@ -116,22 +134,33 @@ It may take several minutes for the Oracle database containers to become healthy
       dbms_service.start_service('SALES1_TC');
     end;
     /
-    select name, network_name from v$services where lower(name) like 'sales1%' order by name;
+    select name, network_name from v$services where upper(name) = 'SALES1_TC';
     exit
     exit
     </copy>
     ```
 
+    Leave the container with `exit` after completing the SQL commands.
+
     Expected values are `TRUE CACHE` with `READ ONLY WITH APPLY` open mode for True Cache. The service query should list the `SALES1_TC` read service in the `ORCLPDB1` PDB.
 
-3. Run the BasicApp routing proof.
+    If either `start_service` call reports `ORA-44305`, that service is already running; continue with the service query.
+
+3. From the host terminal, load the lab environment and open the application container once. The environment file contains the generated Transactions password used by the lab services. Do not use the VNC password or a sample password.
 
     ```
     <copy>
-    read -rsp 'Transactions password: ' TC_DB_PASSWORD; echo
-    sudo podman exec -e TC_DB_PASSWORD="$TC_DB_PASSWORD" -it appclient /bin/bash
+    source /home/opc/.truecache_lab_env
+    sudo podman exec -e DB_PASS="$DB_PASS" -it appclient /bin/bash
+    </copy>
+    ```
+
+    At the `appclient` container prompt, run the BasicApp routing proof:
+
+    ```
+    <copy>
     cd /stage/clientapp/BasicApp
-    /stage/jdk-17.0.6/bin/java -cp ojdbc8.jar:. TrueCache 172.20.1.2:1521/sales1 transactions "$TC_DB_PASSWORD"
+    /stage/jdk-17.0.6/bin/java -cp ojdbc8.jar:. TrueCache 172.20.1.2:1521/sales1 transactions "$DB_PASS"
     exit
     </copy>
     ```
@@ -142,5 +171,5 @@ Continue to the next lab.
 
 ## Acknowledgements
 * **Authors** - Sambit Panda, Consulting Member of Technical Staff, Oracle Database Product Management
-* **Contributors** - Pankaj Chandiramani, Shefali Bhargava, Jyoti Verma, Nithin Thekkupadam Narayanan
+* **Contributors** - Pankaj Chandiramani, Shefali Bhargava, Jyoti Verma, Nithin Thekkupadam Narayanan, Sarvesh Gupta
 * **Last Updated By/Date** - Sambit Panda, Consulting Member of Technical Staff, Sep 2026

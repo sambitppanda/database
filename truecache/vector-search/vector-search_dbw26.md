@@ -1,10 +1,10 @@
-# Semantic Retrieval Using Vector Search and True Cache
+# New Feature: Semantic Cache with Vector Search
 
 ## Introduction
 
-This lab adds vector-similarity retrieval to the existing TRANSACTIONS payment workflow by using Oracle AI Vector Search with Oracle True Cache. Eligible read-only similarity queries can be routed to True Cache, reducing Primary database read load and query latency when relevant vector data is available in cache.
+This lab adds vector-similarity retrieval to the existing TRANSACTIONS payment workflow by using Oracle AI Vector Search with Oracle True Cache. Vector retrieval is a read-heavy workload that can repeat similar searches against a relatively stable corpus. Eligible read-only similarity queries can be routed to True Cache, reducing repeated reads against Primary, improving response time under concurrent search load, and leaving Primary focused on transactional work. The Primary database remains the system of record for writes, ingestion, corpus refreshes, and freshness-sensitive operations.
 
-The vector table is built from PAYMENTS, keeping the search results aligned with the existing schema. The environment includes a 20,000-row PAYMENT_VECTORS sample, and the lab demonstrates how to create the table, create deterministic payment feature vectors, build the vector index, and run similarity searches against True Cache.
+The vector table is built from PAYMENTS, keeping the search results aligned with the existing schema. The final image pre-provisions the 20,000-row `PAYMENT_VECTORS` sample and its cosine IVF index. The normal path verifies those objects and runs similarity searches through True Cache; the guarded setup blocks below are available only for recovery or an instance where the objects are missing.
 
 ![Full LiveLab semantic retrieval using vector search](images/full-livelab-vector-search.png " ")
 
@@ -12,21 +12,27 @@ Estimated Time: 15 minutes.
 
 ## Objectives
 
-- Create a native Oracle vector table in the TRANSACTIONS schema.
-- Create deterministic 16-dimensional payment feature vectors from existing payment attributes.
-- Create a cosine IVF vector index.
+- Verify the native Oracle vector table and deterministic 16-dimensional payment feature vectors in the TRANSACTIONS schema.
+- Verify that the cosine IVF vector index is present and valid.
 - Run similar-payment, account-behavior, and cross-border queries through True Cache.
 - Explain why each query returns the five nearest rows under its filter and how to interpret cosine distance.
 
-## Task 1: Semantic Retrieval Using Vector Search and True Cache
+## Task 1: Semantic Cache Retrieval Using Vector Search
 
-Run the following commands in the host terminal. The database commands use SYSDBA authentication inside the database containers, so no database password is placed in a command or displayed on screen.
+The commands are grouped by container. Open the Primary database container once, complete the Primary SQL*Plus work, and leave that container before opening the True Cache container. The database commands use SYSDBA authentication, so no database password is placed in a command or displayed on screen.
 
-Open Primary SQL*Plus:
+From the desktop Terminal, open the Primary database container once:
 
 ~~~text
 <copy>
 sudo podman exec -it prod /bin/bash
+</copy>
+~~~
+
+At the `prod` container prompt, start SQL*Plus and run the following commands:
+
+~~~text
+<copy>
 export ORACLE_SID=ORCLCDB
 sqlplus / as sysdba
 alter session set container=ORCLPDB1;
@@ -43,7 +49,7 @@ fetch first 10 rows only;
 </copy>
 ~~~
 
-Create the native vector table. The block creates `PAYMENT_VECTORS` only when it does not already exist. If the table exists, verify that its columns and vector dimension match the definition below before continuing:
+Verify the native vector table. In the normal image it already exists. If it is missing in a recovery environment, the guarded block creates `PAYMENT_VECTORS`; if it exists, verify that its columns and vector dimension match the definition below before continuing:
 
 ~~~text
 <copy>
@@ -57,7 +63,7 @@ end;
 </copy>
 ~~~
 
-Create the 16-dimensional payment feature vector from the existing payment fields. The first dimensions encode normalized amount, account, country, and transaction-time features. The remaining deterministic values help distinguish otherwise similar rows. These values are a demonstration feature vector derived from transaction attributes:
+Verify the 16-dimensional payment feature vector. If the pre-provisioned sample is missing or incomplete, the following merge repopulates it from the existing payment fields. The first dimensions encode normalized amount, account, country, and transaction-time features. The remaining deterministic values help distinguish otherwise similar rows. These values are a demonstration feature vector derived from transaction attributes:
 
 ~~~text
 <copy>
@@ -91,7 +97,7 @@ select count(*) vector_rows from TRANSACTIONS.PAYMENT_VECTORS;
 
 Expected result: PAYMENT_VECTORS contains 20,000 rows in the pre-provisioned sample. If you created the table in a different environment, the count reflects the available PAYMENTS rows, up to the 20,000-row limit. If you initialized the table yourself, the count reflects the rows available in `PAYMENTS` up to the 20,000-row sample limit.
 
-Create the cosine IVF vector index if it does not exist. Rebuild the index only when it is unusable, for example after truncating the base table:
+Verify the cosine IVF vector index. In the normal image it is already present and valid. If it is missing, or is unusable after a recovery operation such as truncating the base table, the guarded block creates or rebuilds it:
 
 ~~~text
 <copy>
@@ -142,11 +148,18 @@ exit
 </copy>
 ~~~
 
-Run the nearest-neighbor query through True Cache. Replace each occurrence of 1 in the query with the payment ID returned by the preceding query:
+From the host terminal, open the True Cache container once:
 
 ~~~text
 <copy>
 sudo podman exec -it truedb /bin/bash
+</copy>
+~~~
+
+At the `truedb` container prompt, start SQL*Plus and run the nearest-neighbor query. Replace each occurrence of 1 in the query with the payment ID returned by the preceding query:
+
+~~~text
+<copy>
 export ORACLE_SID=TRUEDB
 sqlplus / as sysdba
 set pages 100 lines 220
@@ -220,5 +233,5 @@ The lab is complete when:
 ## Acknowledgements
 
 * **Authors** - Sambit Panda, Consulting Member of Technical Staff, Oracle Database Product Management
-* **Contributors** - Pankaj Chandiramani, Shefali Bhargava, Jyoti Verma, Nithin Thekkupadam Narayanan
+* **Contributors** - Pankaj Chandiramani, Shefali Bhargava, Jyoti Verma, Nithin Thekkupadam Narayanan, Sarvesh Gupta
 * **Last Updated By/Date** - Sambit Panda, Consulting Member of Technical Staff, Sep 2026
